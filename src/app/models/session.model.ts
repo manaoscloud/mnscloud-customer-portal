@@ -6,6 +6,7 @@ export type CustomerPortalUser = {
   environmentUUID: string;
   name: string | null;
   email: string;
+  username?: string | null;
   role: CustomerPortalRole;
   mustChangePassword: boolean;
   tokenUUID: string | null;

@@ -20,8 +20,8 @@ import { AuthService } from '../core/auth/auth.service';
 
       <form [formGroup]="form" (ngSubmit)="submit()">
         <mat-form-field appearance="outline">
-          <mat-label>Email</mat-label>
-          <input matInput formControlName="email" autocomplete="email" />
+          <mat-label>Login / Username</mat-label>
+          <input matInput formControlName="login" autocomplete="username" />
         </mat-form-field>
 
         <mat-form-field appearance="outline">
@@ -50,7 +50,7 @@ export class LoginPageComponent {
   readonly error = signal<string | null>(null);
 
   readonly form = this.fb.group({
-    email: ['', [Validators.required, Validators.email]],
+    login: ['', [Validators.required]],
     password: ['', [Validators.required]],
   });
 
@@ -61,8 +61,8 @@ export class LoginPageComponent {
     this.error.set(null);
 
     try {
-      const { email, password } = this.form.getRawValue();
-      await this.auth.signIn(email ?? '', password ?? '');
+      const { login, password } = this.form.getRawValue();
+      await this.auth.signIn(login ?? '', password ?? '');
       await this.router.navigateByUrl('/dashboard');
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Could not sign in.');
