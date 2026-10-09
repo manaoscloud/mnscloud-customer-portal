@@ -19,9 +19,12 @@ export class AuthService {
     return localStorage.getItem(JWT_KEY);
   }
 
-  async signIn(email: string, password: string): Promise<void> {
+  async signIn(login: string, password: string): Promise<void> {
+    const trimmed = login.trim();
     const response = await this.api.post<AuthResponse>('customer-portal/auth/signin', {
-      email,
+      login: trimmed,
+      username: trimmed,
+      email: trimmed,
       password,
     });
 
