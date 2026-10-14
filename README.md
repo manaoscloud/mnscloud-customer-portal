@@ -7,7 +7,8 @@ only documented MNSCloud API contracts under `/api/v1/customer-portal`.
 
 - Product/runtime: `mnscloud-customer-portal`
 - Project directory: `/opt/mnscloud/mnscloud-customer-portal`
-- Framework: Angular
+- Framework: Angular 22 (zoneless, standalone components, signals)
+- UI: Angular Material 3 (`mat.theme` in `src/styles.scss`), self-hosted Inter and Material Icons fonts
 - Local development command: `npm run start`
 - Build command: `npm run build`
 - Check command: `npm run check`
@@ -34,6 +35,18 @@ window.MNSCLOUD_CUSTOMER_PORTAL_CONFIG = {
 ```
 
 If `apiBaseUrl` is empty, the app falls back to same-origin `/api/v1`.
+
+## Theme
+
+- Light and dark schemes come from one Material 3 theme with `theme-type: color-scheme`;
+  `ThemeService` (`src/app/core/theme/theme.service.ts`) sets `color-scheme` on `<html>` and stores
+  the viewer's choice locally.
+- Style components with Material system tokens (`--mat-sys-*`) or the portal tokens defined on
+  `html` in `src/styles.scss` (`--surface`, `--border`, `--muted`, `--success`, ...), never fixed
+  colors, so both schemes and white-label branding keep working. `--tenant-primary-color` is the
+  brand accent hook.
+- Fonts are bundled from npm (`@fontsource-variable/inter`, `material-icons`); do not add third-party
+  font or icon CDNs.
 
 ## Security Boundary
 

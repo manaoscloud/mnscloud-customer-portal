@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { ApiService } from '../../services/api.service';
 import type { ApiEnvelope } from '../../models/session.model';
@@ -6,6 +6,7 @@ import type { ApiEnvelope } from '../../models/session.model';
 @Component({
   selector: 'mcp-profile-page',
   imports: [MatIconModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <section class="page">
       <header class="page-header">
@@ -15,8 +16,8 @@ import type { ApiEnvelope } from '../../models/session.model';
         </div>
       </header>
 
-      <article class="profile-panel">
-        <mat-icon>business</mat-icon>
+      <article class="profile-panel card">
+        <span class="icon-badge"><mat-icon>business</mat-icon></span>
         <div>
           <h2>{{ profile()?.['CustomerName'] || profile()?.['Name'] || 'Customer' }}</h2>
           <p>{{ profile()?.['CustomerEmail'] || profile()?.['Email'] }}</p>
