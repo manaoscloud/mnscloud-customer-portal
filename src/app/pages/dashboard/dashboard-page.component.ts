@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { ApiService } from '../../services/api.service';
 import type { ApiEnvelope } from '../../models/session.model';
@@ -13,6 +13,7 @@ type DashboardSummary = {
 @Component({
   selector: 'mcp-dashboard-page',
   imports: [MatIconModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <section class="page">
       <header class="page-header">
@@ -23,18 +24,18 @@ type DashboardSummary = {
       </header>
 
       <div class="metric-grid">
-        <article class="metric">
-          <mat-icon>dns</mat-icon>
+        <article class="metric card">
+          <span class="icon-badge"><mat-icon>dns</mat-icon></span>
           <span>Active services</span>
           <strong>{{ summary()?.activeServices ?? 0 }}</strong>
         </article>
-        <article class="metric">
-          <mat-icon>receipt_long</mat-icon>
+        <article class="metric card">
+          <span class="icon-badge"><mat-icon>receipt_long</mat-icon></span>
           <span>Financial items</span>
           <strong>{{ summary()?.openFinancialItems ?? 0 }}</strong>
         </article>
-        <article class="metric">
-          <mat-icon>support_agent</mat-icon>
+        <article class="metric card">
+          <span class="icon-badge"><mat-icon>support_agent</mat-icon></span>
           <span>Open tickets</span>
           <strong>{{ summary()?.openTickets ?? 0 }}</strong>
         </article>

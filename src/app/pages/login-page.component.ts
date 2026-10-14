@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,34 +10,73 @@ import { AuthService } from '../core/auth/auth.service';
 @Component({
   selector: 'mcp-login-page',
   imports: [ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <section class="login-panel">
-      <div class="login-copy">
-        <span class="eyebrow">MNSCloud</span>
-        <h1>Customer Portal</h1>
-        <p>Manage your services, invoices and support requests in one secure place.</p>
+      <div class="login-hero">
+        <div class="brand">
+          <span class="brand-mark">M</span>
+          <span>MNSCloud</span>
+        </div>
+
+        <div>
+          <h1>Customer Portal</h1>
+          <p>Manage your services, invoices and support requests in one secure place.</p>
+        </div>
+
+        <ul>
+          <li><mat-icon>receipt_long</mat-icon> Invoices, Pix and boletos</li>
+          <li><mat-icon>dns</mat-icon> Your contracted services</li>
+          <li><mat-icon>support_agent</mat-icon> Support requests</li>
+        </ul>
       </div>
 
-      <form [formGroup]="form" (ngSubmit)="submit()">
-        <mat-form-field appearance="outline">
-          <mat-label>Login / Username</mat-label>
-          <input matInput formControlName="login" autocomplete="username" />
-        </mat-form-field>
+      <div class="login-form">
+        <h2>Sign in</h2>
+        <p class="login-subtitle">Use the credentials provided by your service provider.</p>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Password</mat-label>
-          <input matInput type="password" formControlName="password" autocomplete="current-password" />
-        </mat-form-field>
+        <form [formGroup]="form" (ngSubmit)="submit()">
+          <mat-form-field appearance="outline">
+            <mat-label>Login / Username</mat-label>
+            <mat-icon matPrefix>person</mat-icon>
+            <input matInput formControlName="login" autocomplete="username" />
+          </mat-form-field>
 
-        @if (error()) {
-          <p class="form-error">{{ error() }}</p>
-        }
+          <mat-form-field appearance="outline">
+            <mat-label>Password</mat-label>
+            <mat-icon matPrefix>lock</mat-icon>
+            <input
+              matInput
+              [type]="showPassword() ? 'text' : 'password'"
+              formControlName="password"
+              autocomplete="current-password"
+            />
+            <button
+              matIconButton
+              matSuffix
+              type="button"
+              [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+              (click)="showPassword.set(!showPassword())"
+            >
+              <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+          </mat-form-field>
 
-        <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || loading()">
-          <mat-icon>login</mat-icon>
-          Sign in
-        </button>
-      </form>
+          @if (error()) {
+            <p class="form-error" role="alert"><mat-icon>error</mat-icon>{{ error() }}</p>
+          }
+
+          <button matButton="filled" type="submit" [disabled]="form.invalid || loading()">
+            <mat-icon>login</mat-icon>
+            {{ loading() ? 'Signing in...' : 'Sign in' }}
+          </button>
+        </form>
+
+        <div class="login-footer">
+          <mat-icon>verified_user</mat-icon>
+          Encrypted connection
+        </div>
+      </div>
     </section>
   `,
 })
@@ -47,6 +86,7 @@ export class LoginPageComponent {
   private readonly router = inject(Router);
 
   readonly loading = signal(false);
+  readonly showPassword = signal(false);
   readonly error = signal<string | null>(null);
 
   readonly form = this.fb.group({

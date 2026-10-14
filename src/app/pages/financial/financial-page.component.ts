@@ -1,6 +1,9 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { ApiService } from '../../services/api.service';
 import type { ApiEnvelope } from '../../models/session.model';
 
@@ -24,31 +27,32 @@ export type CustomerBoleto = {
 @Component({
   selector: 'mcp-financial-page',
   standalone: true,
-  imports: [CommonModule, MatIconModule],
+  imports: [CommonModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule],
   template: `
     <section class="page">
       <header class="page-header">
         <div>
           <span class="eyebrow">Financeiro</span>
           <h1>Faturas e Cobranças</h1>
+          <p>Acompanhe suas cobranças e pague por Pix, boleto ou cartão.</p>
         </div>
       </header>
 
       @if (loading()) {
-        <div class="empty-state">
-          <mat-icon class="spin">sync</mat-icon>
+        <div class="empty-state card">
+          <mat-progress-spinner mode="indeterminate" diameter="40" />
           <p>Carregando faturas...</p>
         </div>
       } @else if (boletos().length === 0) {
-        <div class="empty-state">
-          <mat-icon>check_circle</mat-icon>
+        <div class="empty-state card">
+          <span class="icon-badge success"><mat-icon>check_circle</mat-icon></span>
           <h2>Nenhuma fatura em aberto</h2>
           <p>Você não possui cobranças pendentes no momento.</p>
         </div>
       } @else {
         <div class="boletos-grid">
           @for (boleto of boletos(); track boleto.uuid) {
-            <article class="boleto-card" [class.is-paid]="boleto.status === 'paid'" [class.is-overdue]="boleto.status === 'overdue'">
+            <article class="boleto-card card" [class.is-paid]="boleto.status === 'paid'" [class.is-overdue]="boleto.status === 'overdue'">
               <div class="card-header">
                 <div>
                   <span class="boleto-id">#{{ boleto.id }}</span>
@@ -61,11 +65,11 @@ export type CustomerBoleto = {
 
               <div class="card-body">
                 <div class="info-row">
-                  <span class="label">Valor:</span>
+                  <span class="label">Valor</span>
                   <strong class="amount">{{ formatCurrency(boleto.amount) }}</strong>
                 </div>
                 <div class="info-row">
-                  <span class="label">Vencimento:</span>
+                  <span class="label">Vencimento</span>
                   <span class="value">{{ formatDate(boleto.dueDate) }}</span>
                 </div>
               </div>
@@ -73,28 +77,28 @@ export type CustomerBoleto = {
               @if (boleto.status !== 'paid' && boleto.status !== 'canceled') {
                 <div class="card-actions">
                   @if (boleto.pixCopyPaste) {
-                    <button type="button" class="action-btn btn-pix" (click)="copyToClipboard(boleto.pixCopyPaste, 'Pix Copia e Cola')">
+                    <button matButton="tonal" type="button" (click)="copyToClipboard(boleto.pixCopyPaste, 'Pix Copia e Cola')">
                       <mat-icon>qr_code</mat-icon>
                       Copiar Pix
                     </button>
                   }
 
                   @if (boleto.digitableLine) {
-                    <button type="button" class="action-btn btn-boleto" (click)="copyToClipboard(boleto.digitableLine, 'Linha Digitável')">
+                    <button matButton="outlined" type="button" (click)="copyToClipboard(boleto.digitableLine, 'Linha Digitável')">
                       <mat-icon>content_copy</mat-icon>
                       Linha Digitável
                     </button>
                   }
 
                   @if (boleto.boletoUrl) {
-                    <a [href]="boleto.boletoUrl" target="_blank" rel="noopener noreferrer" class="action-btn btn-pdf">
+                    <a matButton="outlined" [href]="boleto.boletoUrl" target="_blank" rel="noopener noreferrer">
                       <mat-icon>description</mat-icon>
                       PDF Boleto
                     </a>
                   }
 
                   @if (boleto.invoiceUrl) {
-                    <a [href]="boleto.invoiceUrl" target="_blank" rel="noopener noreferrer" class="action-btn btn-card">
+                    <a matButton="filled" [href]="boleto.invoiceUrl" target="_blank" rel="noopener noreferrer">
                       <mat-icon>credit_card</mat-icon>
                       Pagar com Cartão
                     </a>
@@ -105,112 +109,67 @@ export type CustomerBoleto = {
           }
         </div>
       }
-
-      @if (copiedMessage()) {
-        <div class="toast-copied">
-          <mat-icon>check</mat-icon>
-          {{ copiedMessage() }}
-        </div>
-      }
     </section>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
-    .page-header {
-      margin-bottom: 24px;
+    .icon-badge.success {
+      color: var(--success);
+      background: var(--success-container);
     }
-    .eyebrow {
-      text-transform: uppercase;
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      color: #6366f1;
-    }
-    h1 {
-      margin: 4px 0 0;
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: #1e293b;
-    }
-    .empty-state {
-      padding: 48px;
-      text-align: center;
-      background: #ffffff;
-      border-radius: 12px;
-      border: 1px solid #e2e8f0;
-      mat-icon {
-        font-size: 48px;
-        width: 48px;
-        height: 48px;
-        color: #10b981;
-        margin-bottom: 12px;
-      }
-      p { color: #64748b; margin: 4px 0 0; }
-    }
-    .spin {
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
     .boletos-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
       gap: 16px;
     }
     .boleto-card {
-      background: #ffffff;
-      border-radius: 12px;
-      border: 1px solid #e2e8f0;
       padding: 20px;
       display: flex;
       flex-direction: column;
       gap: 16px;
-      transition: box-shadow 0.2s, transform 0.2s;
-      &:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-      }
       &.is-paid {
-        border-left: 4px solid #10b981;
+        border-left: 4px solid var(--success);
       }
       &.is-overdue {
-        border-left: 4px solid #ef4444;
+        border-left: 4px solid var(--danger);
       }
     }
     .card-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
+      gap: 12px;
     }
     .boleto-id {
       font-size: 0.75rem;
-      font-family: monospace;
-      color: #94a3b8;
+      font-family: ui-monospace, monospace;
+      color: var(--muted);
     }
     .boleto-title {
       margin: 2px 0 0;
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: #0f172a;
+      font-size: 1.05rem;
+      font-weight: 650;
     }
     .status-badge {
+      flex: none;
       font-size: 0.75rem;
-      font-weight: 600;
+      font-weight: 650;
       padding: 4px 10px;
-      border-radius: 9999px;
+      border-radius: 999px;
       text-transform: uppercase;
+      color: var(--muted);
+      background: var(--neutral-container);
       &.status-open {
-        background: #fef3c7;
-        color: #b45309;
+        color: var(--warning);
+        background: var(--warning-container);
       }
       &.status-paid {
-        background: #d1fae5;
-        color: #065f46;
+        color: var(--success);
+        background: var(--success-container);
       }
       &.status-overdue {
-        background: #fee2e2;
-        color: #991b1b;
-      }
-      &.status-canceled {
-        background: #f1f5f9;
-        color: #64748b;
+        color: var(--danger);
+        background: var(--danger-container);
       }
     }
     .card-body {
@@ -224,95 +183,36 @@ export type CustomerBoleto = {
       align-items: center;
       .label {
         font-size: 0.875rem;
-        color: #64748b;
+        color: var(--muted);
       }
       .amount {
         font-size: 1.25rem;
         font-weight: 700;
-        color: #0f172a;
       }
       .value {
         font-size: 0.875rem;
-        font-weight: 500;
-        color: #334155;
+        font-weight: 550;
       }
     }
     .card-actions {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
-      padding-top: 12px;
-      border-top: 1px solid #f1f5f9;
-    }
-    .action-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 0.8125rem;
-      font-weight: 600;
-      text-decoration: none;
-      cursor: pointer;
-      border: 1px solid transparent;
-      transition: all 0.15s ease-in-out;
-      mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-      }
-      &.btn-pix {
-        background: #f0fdf4;
-        color: #15803d;
-        border-color: #bbf7d0;
-        &:hover { background: #dcfce7; }
-      }
-      &.btn-boleto {
-        background: #f8fafc;
-        color: #334155;
-        border-color: #cbd5e1;
-        &:hover { background: #f1f5f9; }
-      }
-      &.btn-pdf {
-        background: #eff6ff;
-        color: #1d4ed8;
-        border-color: #bfdbfe;
-        &:hover { background: #dbeafe; }
-      }
-      &.btn-card {
-        background: #faf5ff;
-        color: #7e22ce;
-        border-color: #e9d5ff;
-        &:hover { background: #f3e8ff; }
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      .mat-mdc-button-base {
+        min-width: 0;
+        padding-inline: 10px;
+        white-space: nowrap;
       }
     }
-    .toast-copied {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: #0f172a;
-      color: #ffffff;
-      padding: 12px 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      animation: fadeIn 0.2s ease-out;
-      z-index: 1000;
-      mat-icon { color: #4ade80; }
-    }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   `]
 })
 export class FinancialPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly snackBar = inject(MatSnackBar);
   readonly boletos = signal<CustomerBoleto[]>([]);
   readonly loading = signal<boolean>(true);
-  readonly copiedMessage = signal<string | null>(null);
 
   async ngOnInit(): Promise<void> {
     await this.loadBoletos();
@@ -348,13 +248,20 @@ export class FinancialPageComponent implements OnInit {
 
   formatDate(dateStr: string): string {
     if (!dateStr) return '-';
-    const date = new Date(dateStr);
+    // Date-only values (YYYY-MM-DD) are calendar dates; parsing them as UTC shifts the day.
+    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+    const date = dateOnly
+      ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+      : new Date(dateStr);
     return date.toLocaleDateString('pt-BR');
   }
 
-  copyToClipboard(text: string, label: string): void {
-    navigator.clipboard.writeText(text);
-    this.copiedMessage.set(`${label} copiado para a área de transferência!`);
-    setTimeout(() => this.copiedMessage.set(null), 3000);
+  async copyToClipboard(text: string, label: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(text);
+      this.snackBar.open(`${label} copiado para a área de transferência!`, undefined, { duration: 3000 });
+    } catch {
+      this.snackBar.open(`Não foi possível copiar ${label}.`, 'OK', { duration: 5000 });
+    }
   }
 }
