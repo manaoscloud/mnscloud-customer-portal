@@ -114,7 +114,7 @@ const ROLE_LABELS: Record<CustomerPortalRole, string> = {
           <mat-menu #userMenu="matMenu" xPosition="before">
             <div class="user-menu-header">
               <strong>{{ displayName() }}</strong>
-              <span>{{ auth.user()?.email }}</span>
+              <span>{{ auth.user()?.email || auth.user()?.username }}</span>
             </div>
             <a mat-menu-item routerLink="/profile">
               <mat-icon>person</mat-icon>

@@ -21,10 +21,10 @@ export class AuthService {
 
   async signIn(login: string, password: string): Promise<void> {
     const trimmed = login.trim();
+    // The portal login is the generated username sent with the credentials (not the e-mail).
     const response = await this.api.post<AuthResponse>('customer-portal/auth/signin', {
       login: trimmed,
       username: trimmed,
-      email: trimmed,
       password,
     });
 
