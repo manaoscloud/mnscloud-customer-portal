@@ -33,11 +33,11 @@ import { AuthService } from '../core/auth/auth.service';
 
       <div class="login-form">
         <h2>Sign in</h2>
-        <p class="login-subtitle">Use the credentials provided by your service provider.</p>
+        <p class="login-subtitle">Use the username and password sent by your service provider.</p>
 
         <form [formGroup]="form" (ngSubmit)="submit()">
           <mat-form-field appearance="outline">
-            <mat-label>Login / Username</mat-label>
+            <mat-label>Username</mat-label>
             <mat-icon matPrefix>person</mat-icon>
             <input matInput formControlName="login" autocomplete="username" />
           </mat-form-field>
