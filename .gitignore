@@ -4,3 +4,5 @@ dist/
 coverage/
 .env
 *.log
+/releases/*.tar.gz
+/releases/*.tar.gz.sha256
