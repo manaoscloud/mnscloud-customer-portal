@@ -33,7 +33,11 @@ export class AuthService {
     this.userState.set(response.data.user);
   }
 
-  signOut(): void {
+  async signOut(): Promise<void> {
+    // Revoke the session server-side; the local session is cleared even if the API is unreachable.
+    if (this.token) {
+      await this.api.post('customer-portal/auth/signout', {}).catch(() => undefined);
+    }
     localStorage.removeItem(JWT_KEY);
     localStorage.removeItem(USER_KEY);
     this.userState.set(null);

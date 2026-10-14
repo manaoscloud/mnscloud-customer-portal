@@ -120,7 +120,7 @@ const ROLE_LABELS: Record<CustomerPortalRole, string> = {
               <mat-icon>person</mat-icon>
               <span>Profile</span>
             </a>
-            <button mat-menu-item type="button" (click)="auth.signOut()">
+            <button mat-menu-item type="button" (click)="void auth.signOut()">
               <mat-icon>logout</mat-icon>
               <span>Sign out</span>
             </button>

@@ -5,6 +5,11 @@ import { RuntimeConfigService } from '../core/runtime/runtime-config.service';
 export class ApiService {
   private readonly runtime = inject(RuntimeConfigService);
 
+  /** Full reload to the login page so every in-memory session state is reset. */
+  sessionRevoked = (): void => {
+    window.location.assign(new URL('auth/login', document.baseURI).toString());
+  };
+
   async get<T>(endpoint: string): Promise<T> {
     return this.request<T>('GET', endpoint);
   }
@@ -25,6 +30,13 @@ export class ApiService {
     });
 
     const payload = await response.json().catch(() => ({}));
+    if (response.status === 401 && token) {
+      // The API revoked this session (sign-out elsewhere, customer or user disabled): drop the
+      // local session and start over at the login page.
+      localStorage.removeItem('mnscloud_customer_portal_jwt');
+      localStorage.removeItem('mnscloud_customer_portal_user');
+      this.sessionRevoked();
+    }
     if (!response.ok) {
       throw new Error(payload?.error ?? payload?.message ?? 'Request failed.');
     }
