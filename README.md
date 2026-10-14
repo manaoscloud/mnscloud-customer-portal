@@ -11,6 +11,7 @@ only documented MNSCloud API contracts under `/api/v1/customer-portal`.
 - UI: Angular Material 3 (`mat.theme` in `src/styles.scss`), self-hosted Inter and Material Icons fonts
 - Local development command: `npm run start`
 - Build command: `npm run build`
+- Unit tests: `npm test` (Angular `unit-test` builder with Vitest and jsdom; no browser needed)
 - Check command: `npm run check`
 - Runtime config source: `public/env.js`
 - Runtime config object: `window.MNSCLOUD_CUSTOMER_PORTAL_CONFIG`
