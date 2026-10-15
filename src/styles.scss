@@ -84,6 +84,12 @@ a {
     radial-gradient(1200px 600px at 10% -10%, color-mix(in srgb, var(--mat-sys-primary) 18%, transparent), transparent),
     radial-gradient(900px 500px at 110% 110%, color-mix(in srgb, var(--mat-sys-tertiary) 14%, transparent), transparent),
     var(--surface-muted);
+
+  // The outlet host is an empty grid item; as a track it takes half of the free height and
+  // pushes the panel below the vertical center.
+  > router-outlet {
+    display: none;
+  }
 }
 
 .login-panel {
