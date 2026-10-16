@@ -1,4 +1,4 @@
-import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ElementRef, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,7 +9,13 @@ import { AuthService } from '../core/auth/auth.service';
 
 @Component({
   selector: 'mcp-login-page',
-  imports: [ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule],
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+  ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <section class="login-panel">
@@ -40,6 +46,7 @@ import { AuthService } from '../core/auth/auth.service';
             <mat-label>Username</mat-label>
             <mat-icon matPrefix>person</mat-icon>
             <input matInput formControlName="login" autocomplete="username" />
+            <mat-error>Enter your username.</mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
@@ -60,13 +67,14 @@ import { AuthService } from '../core/auth/auth.service';
             >
               <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
             </button>
+            <mat-error>Enter your password.</mat-error>
           </mat-form-field>
 
           @if (error()) {
             <p class="form-error" role="alert"><mat-icon>error</mat-icon>{{ error() }}</p>
           }
 
-          <button matButton="filled" type="submit" [disabled]="form.invalid || loading()">
+          <button matButton="filled" type="submit" [disabled]="loading()">
             <mat-icon>login</mat-icon>
             {{ loading() ? 'Signing in...' : 'Sign in' }}
           </button>
@@ -84,6 +92,7 @@ export class LoginPageComponent {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly loading = signal(false);
   readonly showPassword = signal(false);
@@ -95,7 +104,11 @@ export class LoginPageComponent {
   });
 
   async submit(): Promise<void> {
-    if (this.form.invalid || this.loading()) return;
+    if (this.loading()) return;
+    if (this.form.invalid) {
+      this.revealInvalidFields();
+      return;
+    }
 
     this.loading.set(true);
     this.error.set(null);
@@ -109,5 +122,12 @@ export class LoginPageComponent {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  /** Missing fields turn red with their message and the first one receives focus. */
+  private revealInvalidFields(): void {
+    this.form.markAllAsTouched();
+    const first = (['login', 'password'] as const).find((key) => this.form.controls[key].invalid);
+    this.host.nativeElement.querySelector<HTMLElement>(`[formControlName="${first}"]`)?.focus();
   }
 }
