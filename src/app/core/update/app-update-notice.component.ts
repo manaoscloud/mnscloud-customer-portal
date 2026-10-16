@@ -11,16 +11,20 @@ import { AppUpdateService } from './app-update.service';
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     @if (update.noticeVisible()) {
+      @let critical = update.critical();
       <aside
         class="update-notice"
+        [class.critical]="critical"
         role="status"
         aria-live="polite"
-        aria-label="New version available"
+        [attr.aria-label]="critical ? 'Important update' : 'New version available'"
       >
-        <mat-icon class="update-icon" aria-hidden="true">auto_awesome</mat-icon>
+        <mat-icon class="update-icon" aria-hidden="true">{{
+          critical ? 'system_update' : 'auto_awesome'
+        }}</mat-icon>
         <div class="update-body">
           <p class="update-title">
-            New version available
+            {{ critical ? 'Important update' : 'New version available' }}
             @if (update.deployed(); as deployed) {
               <span class="update-version">v{{ deployed.version }}</span>
             }
@@ -28,29 +32,36 @@ import { AppUpdateService } from './app-update.service';
           <p class="update-text">
             @if (confirmOpenWork()) {
               You have typed on this page. Save it before updating so nothing is lost.
+            } @else if (critical) {
+              This version fixes an important issue. Save what you are doing and update as soon as
+              possible.
             } @else {
               The portal was updated with improvements and fixes. Finish what you are doing and
               update when convenient.
             }
           </p>
           <div class="update-actions">
-            <button mat-button type="button" (click)="later()">Later</button>
+            @if (!critical) {
+              <button mat-button type="button" (click)="later()">Later</button>
+            }
             <button mat-flat-button type="button" (click)="reload()">
               <mat-icon aria-hidden="true">refresh</mat-icon>
               {{ confirmOpenWork() ? 'Update anyway' : 'Update now' }}
             </button>
           </div>
         </div>
-        <button
-          mat-icon-button
-          type="button"
-          class="update-close"
-          matTooltip="Remind me later"
-          aria-label="Remind me later"
-          (click)="later()"
-        >
-          <mat-icon>close</mat-icon>
-        </button>
+        @if (!critical) {
+          <button
+            mat-icon-button
+            type="button"
+            class="update-close"
+            matTooltip="Remind me later"
+            aria-label="Remind me later"
+            (click)="later()"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        }
       </aside>
     }
   `,
@@ -74,6 +85,10 @@ import { AppUpdateService } from './app-update.service';
         0 6px 24px rgba(0, 0, 0, 0.14),
         0 2px 6px rgba(0, 0, 0, 0.08);
       animation: update-in 220ms ease-out;
+    }
+    .update-notice.critical {
+      padding-right: 16px;
+      border: 2px solid var(--mat-sys-primary);
     }
     .update-icon {
       flex: none;

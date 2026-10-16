@@ -66,3 +66,8 @@ start, every ~5 min while visible and on focus/online/route change, and compares
 different version is shown only after two reads 45 s apart, as a calm notice with `Update now`
 (asks first if the customer typed on the page) and `Later` (4 h per version). With an update
 pending, the next route change becomes a full page load; a missing lazy chunk reloads once.
+
+A release that fixes a serious problem sets `minimumVersion` in `public/update-policy.json` (usually
+to its own version, in the same PR). `mnscloud-webapps` copies it into `build.json`, and tabs
+running below it get an `Important update` notice without `Later`. It still never reloads by
+itself. Keep it `null` for regular releases.

@@ -26,7 +26,15 @@ describe('AppUpdateService', () => {
   it('parses only portal build metadata with a semantic version', () => {
     expect(parseBuildMetadata({ product: 'mnscloud-customer-portal', version: 'v1.2.3' })).toEqual({
       version: '1.2.3',
+      minimumVersion: null,
     });
+    expect(
+      parseBuildMetadata({
+        product: 'mnscloud-customer-portal',
+        version: '1.2.3',
+        minimumVersion: '1.2.0',
+      }),
+    ).toEqual({ version: '1.2.3', minimumVersion: '1.2.0' });
     expect(parseBuildMetadata({ product: 'mnscloud-phoneweb', version: '1.2.3' })).toBeNull();
     expect(parseBuildMetadata({ product: 'mnscloud-customer-portal', version: '<x>' })).toBeNull();
   });
@@ -50,6 +58,21 @@ describe('AppUpdateService', () => {
     expect(service.noticeVisible()).toBe(false);
     announce('999.0.1', 100_000);
     expect(service.noticeVisible()).toBe(true);
+  });
+
+  it('cannot postpone a critical release (running below its minimum version)', async () => {
+    const critical = { version: newer, minimumVersion: newer };
+    service.observe(critical, 0);
+    service.observe(critical, UPDATE_CONFIRM_DELAY_MS);
+    expect(service.critical()).toBe(true);
+    service.postpone();
+    expect(service.noticeVisible()).toBe(true);
+    vi.spyOn(service, 'start').mockImplementation(() => undefined);
+    const fixture = TestBed.createComponent(AppUpdateNoticeComponent);
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.textContent).toContain('Important update');
+    expect(element.querySelector('button[mat-button]')).toBeNull();
   });
 
   it('clears the update after a rollback to the running version', () => {
