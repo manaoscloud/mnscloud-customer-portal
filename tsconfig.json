@@ -13,6 +13,7 @@
     "target": "ES2022",
     "module": "preserve",
     "moduleResolution": "bundler",
+    "resolveJsonModule": true,
     "lib": ["ES2022", "dom"]
   },
   "angularCompilerOptions": {

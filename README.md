@@ -56,3 +56,13 @@ If `apiBaseUrl` is empty, the app falls back to same-origin `/api/v1`.
 - Browser-side permission checks are UX only.
 - The MNSCloud API remains the source of truth for tenant scope, customer scope, billing, routing,
   service ownership, policy decisions and secret resolution.
+
+## New version notice
+
+An open tab detects a newer release without a refresh: `src/app/core/update/app-update.service.ts`
+reads `build.json` (written by `mnscloud-webapps` next to `index.html` of the active release) on
+start, every ~5 min while visible and on focus/online/route change, and compares it with the
+`package.json` version compiled into the bundle (synced from `VERSION` by the release script). A
+different version is shown only after two reads 45 s apart, as a calm notice with `Update now`
+(asks first if the customer typed on the page) and `Later` (4 h per version). With an update
+pending, the next route change becomes a full page load; a missing lazy chunk reloads once.
