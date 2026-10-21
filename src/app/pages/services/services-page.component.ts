@@ -18,7 +18,7 @@ import { MatIconModule } from '@angular/material/icon';
         <article class="module-tile card">
           <span class="icon-badge"><mat-icon>settings_phone</mat-icon></span>
           <h2>PABX</h2>
-          <p>Customer-linked accounts, extensions and call resources will be filtered by CustomerCusUUID.</p>
+          <p>Customer-linked accounts, extensions and call resources will be filtered by your customer record.</p>
         </article>
         <article class="module-tile card">
           <span class="icon-badge"><mat-icon>language</mat-icon></span>

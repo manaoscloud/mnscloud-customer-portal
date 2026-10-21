@@ -1,6 +1,6 @@
 # MNSCloud Customer Portal
 
-White label customer portal for ERP customers. This repository is a public API client and consumes
+White label customer portal for the customers of each tenant (Registry customers). This repository is a public API client and consumes
 only documented MNSCloud API contracts under `/api/v1/customer-portal`.
 
 ## Contract
