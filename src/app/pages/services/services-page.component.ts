@@ -1,29 +1,30 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { TranslocoPipe } from '@jsverse/transloco';
 
 @Component({
   selector: 'mcp-services-page',
-  imports: [MatIconModule],
+  imports: [MatIconModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <section class="page">
       <header class="page-header">
         <div>
-          <span class="eyebrow">Operations</span>
-          <h1>Services</h1>
+          <span class="eyebrow">{{ 'services.eyebrow' | transloco }}</span>
+          <h1>{{ 'services.title' | transloco }}</h1>
         </div>
       </header>
 
       <div class="module-grid">
         <article class="module-tile card">
           <span class="icon-badge"><mat-icon>settings_phone</mat-icon></span>
-          <h2>PABX</h2>
-          <p>Customer-linked accounts, extensions and call resources will be filtered by your customer record.</p>
+          <h2>{{ 'services.pabxTitle' | transloco }}</h2>
+          <p>{{ 'services.pabxText' | transloco }}</p>
         </article>
         <article class="module-tile card">
           <span class="icon-badge"><mat-icon>language</mat-icon></span>
-          <h2>Hosting</h2>
-          <p>Hosting, VPS, storage and future services can be added as independent portal modules.</p>
+          <h2>{{ 'services.hostingTitle' | transloco }}</h2>
+          <p>{{ 'services.hostingText' | transloco }}</p>
         </article>
       </div>
     </section>

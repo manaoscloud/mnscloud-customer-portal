@@ -8,7 +8,8 @@
     "start": "ng serve --host 0.0.0.0 --port 4300 --poll 2000",
     "build": "ng build",
     "test": "ng test --watch=false",
-    "check": "npm run build"
+    "check:i18n": "node scripts/i18n-check.mjs",
+    "check": "npm run check:i18n && npm run build"
   },
   "prettier": {
     "printWidth": 100,
@@ -32,6 +33,7 @@
     "@angular/platform-browser": "^22.2.2",
     "@angular/router": "^22.2.2",
     "@fontsource-variable/inter": "^5.3.0",
+    "@jsverse/transloco": "^8.4.0",
     "material-icons": "^1.13.14",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"

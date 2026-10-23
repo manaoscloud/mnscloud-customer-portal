@@ -163,6 +163,13 @@ a {
     font-weight: 650;
   }
 
+  .login-form-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
   .login-subtitle {
     margin: 0 0 20px;
     color: var(--muted);

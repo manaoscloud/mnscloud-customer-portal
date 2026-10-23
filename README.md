@@ -49,6 +49,23 @@ If `apiBaseUrl` is empty, the app falls back to same-origin `/api/v1`.
 - Fonts are bundled from npm (`@fontsource-variable/inter`, `material-icons`); do not add third-party
   font or icon CDNs.
 
+## Languages (i18n)
+
+The portal follows the MNSCloud App translation contract:
+
+- Runtime layer: Transloco only (`@jsverse/transloco`). No hardcoded visible text, local maps or DOM
+  auto-translation.
+- Languages: `pt-BR`, `en-US`, `es-ES`; `en-US` is the fallback for a missing key.
+- Files: `public/i18n/<language>.json`, flat dotted keys (`nav.dashboard`, `financial.status.paid`),
+  loaded relative to the base href, so the portal works under `/customer-portal/`.
+- Language: the browser language (`pt*` → pt-BR, `es*` → es-ES, otherwise en-US) unless the customer
+  picks one in the language menu (login page and top bar). The choice is stored in `localStorage`
+  `mc_language` + `mc_language_mode=manual`, the same keys as the App, and `<html lang>` follows it.
+  Money and dates use the active language.
+- Terms follow the App glossary (`mnscloud-app/i18n-glossary.md`): one concept keeps one term.
+- `npm run check:i18n` (part of `npm run check`) fails when a key is missing or extra in a language,
+  a value is empty, or the source uses a literal key that does not exist.
+
 ## Security Boundary
 
 - Do not commit tokens, passwords, private keys, provider credentials, customer data, production
