@@ -4,6 +4,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { TranslocoPipe } from '@jsverse/transloco';
+import { PortalI18nService } from '../../core/i18n/portal-i18n.service';
 import { ApiService } from '../../services/api.service';
 import type { ApiEnvelope } from '../../models/session.model';
 
@@ -27,27 +29,27 @@ export type CustomerBoleto = {
 @Component({
   selector: 'mcp-financial-page',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule],
+  imports: [CommonModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, TranslocoPipe],
   template: `
     <section class="page">
       <header class="page-header">
         <div>
-          <span class="eyebrow">Financeiro</span>
-          <h1>Faturas e Cobranças</h1>
-          <p>Acompanhe suas cobranças e pague por Pix, boleto ou cartão.</p>
+          <span class="eyebrow">{{ 'financial.eyebrow' | transloco }}</span>
+          <h1>{{ 'financial.title' | transloco }}</h1>
+          <p>{{ 'financial.subtitle' | transloco }}</p>
         </div>
       </header>
 
       @if (loading()) {
         <div class="empty-state card">
           <mat-progress-spinner mode="indeterminate" diameter="40" />
-          <p>Carregando faturas...</p>
+          <p>{{ 'financial.loading' | transloco }}</p>
         </div>
       } @else if (boletos().length === 0) {
         <div class="empty-state card">
           <span class="icon-badge success"><mat-icon>check_circle</mat-icon></span>
-          <h2>Nenhuma fatura em aberto</h2>
-          <p>Você não possui cobranças pendentes no momento.</p>
+          <h2>{{ 'financial.emptyTitle' | transloco }}</h2>
+          <p>{{ 'financial.emptyText' | transloco }}</p>
         </div>
       } @else {
         <div class="boletos-grid">
@@ -56,7 +58,7 @@ export type CustomerBoleto = {
               <div class="card-header">
                 <div>
                   <span class="boleto-id">#{{ boleto.id }}</span>
-                  <h3 class="boleto-title">{{ boleto.title || 'Cobrança' }}</h3>
+                  <h3 class="boleto-title">{{ boleto.title || ('financial.chargeFallback' | transloco) }}</h3>
                 </div>
                 <span class="status-badge" [class]="'status-' + boleto.status">
                   {{ statusLabel(boleto.status) }}
@@ -65,11 +67,11 @@ export type CustomerBoleto = {
 
               <div class="card-body">
                 <div class="info-row">
-                  <span class="label">Valor</span>
+                  <span class="label">{{ 'financial.amount' | transloco }}</span>
                   <strong class="amount">{{ formatCurrency(boleto.amount) }}</strong>
                 </div>
                 <div class="info-row">
-                  <span class="label">Vencimento</span>
+                  <span class="label">{{ 'financial.dueDate' | transloco }}</span>
                   <span class="value">{{ formatDate(boleto.dueDate) }}</span>
                 </div>
               </div>
@@ -77,30 +79,30 @@ export type CustomerBoleto = {
               @if (boleto.status !== 'paid' && boleto.status !== 'canceled') {
                 <div class="card-actions">
                   @if (boleto.pixCopyPaste) {
-                    <button matButton="tonal" type="button" (click)="copyToClipboard(boleto.pixCopyPaste, 'Pix Copia e Cola')">
+                    <button matButton="tonal" type="button" (click)="copyToClipboard(boleto.pixCopyPaste, 'financial.pixCopyPaste')">
                       <mat-icon>qr_code</mat-icon>
-                      Copiar Pix
+                      {{ 'financial.copyPix' | transloco }}
                     </button>
                   }
 
                   @if (boleto.digitableLine) {
-                    <button matButton="outlined" type="button" (click)="copyToClipboard(boleto.digitableLine, 'Linha Digitável')">
+                    <button matButton="outlined" type="button" (click)="copyToClipboard(boleto.digitableLine, 'financial.digitableLine')">
                       <mat-icon>content_copy</mat-icon>
-                      Linha Digitável
+                      {{ 'financial.digitableLine' | transloco }}
                     </button>
                   }
 
                   @if (boleto.boletoUrl) {
                     <a matButton="outlined" [href]="boleto.boletoUrl" target="_blank" rel="noopener noreferrer">
                       <mat-icon>description</mat-icon>
-                      PDF Boleto
+                      {{ 'financial.boletoPdf' | transloco }}
                     </a>
                   }
 
                   @if (boleto.invoiceUrl) {
                     <a matButton="filled" [href]="boleto.invoiceUrl" target="_blank" rel="noopener noreferrer">
                       <mat-icon>credit_card</mat-icon>
-                      Pagar com Cartão
+                      {{ 'financial.payByCard' | transloco }}
                     </a>
                   }
                 </div>
@@ -211,6 +213,7 @@ export type CustomerBoleto = {
 export class FinancialPageComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly i18n = inject(PortalI18nService);
   readonly boletos = signal<CustomerBoleto[]>([]);
   readonly loading = signal<boolean>(true);
 
@@ -233,17 +236,13 @@ export class FinancialPageComponent implements OnInit {
   }
 
   statusLabel(status: string): string {
-    switch (status) {
-      case 'paid': return 'Pago';
-      case 'open': return 'Em aberto';
-      case 'overdue': return 'Vencido';
-      case 'canceled': return 'Cancelado';
-      default: return status;
-    }
+    return ['paid', 'open', 'overdue', 'canceled'].includes(status)
+      ? this.i18n.t(`financial.status.${status}`)
+      : status;
   }
 
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    return this.i18n.formatCurrency(value);
   }
 
   formatDate(dateStr: string): string {
@@ -253,15 +252,18 @@ export class FinancialPageComponent implements OnInit {
     const date = dateOnly
       ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
       : new Date(dateStr);
-    return date.toLocaleDateString('pt-BR');
+    return this.i18n.formatDate(date);
   }
 
-  async copyToClipboard(text: string, label: string): Promise<void> {
+  async copyToClipboard(text: string, labelKey: string): Promise<void> {
+    const label = this.i18n.t(labelKey);
     try {
       await navigator.clipboard.writeText(text);
-      this.snackBar.open(`${label} copiado para a área de transferência!`, undefined, { duration: 3000 });
+      this.snackBar.open(this.i18n.t('financial.copied', { label }), undefined, { duration: 3000 });
     } catch {
-      this.snackBar.open(`Não foi possível copiar ${label}.`, 'OK', { duration: 5000 });
+      this.snackBar.open(this.i18n.t('financial.copyFailed', { label }), this.i18n.t('common.ok'), {
+        duration: 5000,
+      });
     }
   }
 }

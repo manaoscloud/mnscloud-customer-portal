@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+import en from '../../../../public/i18n/en-US.json';
 import {
   AppUpdateService,
   parseBuildMetadata,
@@ -14,7 +16,16 @@ describe('AppUpdateService', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    TestBed.configureTestingModule({
+      imports: [
+        TranslocoTestingModule.forRoot({
+          langs: { 'en-US': en },
+          translocoConfig: { availableLangs: ['en-US'], defaultLang: 'en-US' },
+          preloadLangs: true,
+        }),
+      ],
+      providers: [provideRouter([])],
+    });
     service = TestBed.inject(AppUpdateService);
   });
 

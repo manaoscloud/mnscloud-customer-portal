@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+import en from '../../../public/i18n/en-US.json';
 import { AuthService } from '../core/auth/auth.service';
 import { LoginPageComponent } from './login-page.component';
 
@@ -9,7 +11,14 @@ describe('LoginPageComponent required fields', () => {
   beforeEach(() => {
     signIn = vi.fn().mockResolvedValue(undefined);
     TestBed.configureTestingModule({
-      imports: [LoginPageComponent],
+      imports: [
+        LoginPageComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { 'en-US': en },
+          translocoConfig: { availableLangs: ['en-US'], defaultLang: 'en-US' },
+          preloadLangs: true,
+        }),
+      ],
       providers: [provideRouter([]), { provide: AuthService, useValue: { signIn } }],
     });
   });

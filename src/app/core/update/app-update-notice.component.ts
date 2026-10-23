@@ -2,12 +2,13 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { AppUpdateService } from './app-update.service';
 
 /** Calm, non-blocking notice shown when a newer portal release goes live while the tab is open. */
 @Component({
   selector: 'mcp-app-update-notice',
-  imports: [MatButtonModule, MatIconModule, MatTooltipModule],
+  imports: [MatButtonModule, MatIconModule, MatTooltipModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     @if (update.noticeVisible()) {
@@ -17,36 +18,34 @@ import { AppUpdateService } from './app-update.service';
         [class.critical]="critical"
         role="status"
         aria-live="polite"
-        [attr.aria-label]="critical ? 'Important update' : 'New version available'"
+        [attr.aria-label]="(critical ? 'update.important' : 'update.available') | transloco"
       >
         <mat-icon class="update-icon" aria-hidden="true">{{
           critical ? 'system_update' : 'auto_awesome'
         }}</mat-icon>
         <div class="update-body">
           <p class="update-title">
-            {{ critical ? 'Important update' : 'New version available' }}
+            {{ (critical ? 'update.important' : 'update.available') | transloco }}
             @if (update.deployed(); as deployed) {
               <span class="update-version">v{{ deployed.version }}</span>
             }
           </p>
           <p class="update-text">
             @if (confirmOpenWork()) {
-              You have typed on this page. Save it before updating so nothing is lost.
+              {{ 'update.openWork' | transloco }}
             } @else if (critical) {
-              This version fixes an important issue. Save what you are doing and update as soon as
-              possible.
+              {{ 'update.criticalText' | transloco }}
             } @else {
-              The portal was updated with improvements and fixes. Finish what you are doing and
-              update when convenient.
+              {{ 'update.text' | transloco }}
             }
           </p>
           <div class="update-actions">
             @if (!critical) {
-              <button mat-button type="button" (click)="later()">Later</button>
+              <button mat-button type="button" (click)="later()">{{ 'update.later' | transloco }}</button>
             }
             <button mat-flat-button type="button" (click)="reload()">
               <mat-icon aria-hidden="true">refresh</mat-icon>
-              {{ confirmOpenWork() ? 'Update anyway' : 'Update now' }}
+              {{ (confirmOpenWork() ? 'update.anyway' : 'update.now') | transloco }}
             </button>
           </div>
         </div>
@@ -55,8 +54,8 @@ import { AppUpdateService } from './app-update.service';
             mat-icon-button
             type="button"
             class="update-close"
-            matTooltip="Remind me later"
-            aria-label="Remind me later"
+            [matTooltip]="'update.remindLater' | transloco"
+            [attr.aria-label]="'update.remindLater' | transloco"
             (click)="later()"
           >
             <mat-icon>close</mat-icon>

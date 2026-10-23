@@ -9,3 +9,5 @@ This repository is a public MNSCloud API client for the customer portal.
 - Authorization in the frontend is advisory UX only; API-side checks are mandatory.
 - New modules should live under `src/app/pages/<module>` and call `/customer-portal/<module>/*`
   endpoints.
+- Visible text goes through Transloco keys in `public/i18n/{pt-BR,en-US,es-ES}.json` (README → Languages);
+  run `npm run check:i18n` before pushing.
