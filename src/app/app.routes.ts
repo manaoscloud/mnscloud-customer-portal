@@ -3,6 +3,7 @@ import { authGuard } from './core/auth/auth.guard';
 import { GuestLayoutComponent } from './layout/guest-layout.component';
 import { PortalLayoutComponent } from './layout/portal-layout.component';
 import { LoginPageComponent } from './pages/login-page.component';
+import { ConnectionTestPageComponent } from './pages/connection-test/connection-test-page.component';
 import { DashboardPageComponent } from './pages/dashboard/dashboard-page.component';
 import { FinancialPageComponent } from './pages/financial/financial-page.component';
 import { ServicesPageComponent } from './pages/services/services-page.component';
@@ -15,6 +16,12 @@ export const routes: Routes = [
     path: 'auth',
     component: GuestLayoutComponent,
     children: [{ path: 'login', component: LoginPageComponent }],
+  },
+  {
+    // Public: the subscriber opens it without signing in when the connection fails.
+    path: 'teste',
+    component: GuestLayoutComponent,
+    children: [{ path: '', component: ConnectionTestPageComponent }],
   },
   {
     path: '',
