@@ -210,9 +210,20 @@ form {
   gap: 12px;
 }
 
+// The page host is the grid item of the guest shell: it spans the width and centers the card.
+mcp-connection-test-page {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+}
+
 .connection-test {
   width: min(560px, 100%);
   grid-template-columns: minmax(0, 1fr);
+
+  mat-icon {
+    flex-shrink: 0;
+  }
 
   .test-row {
     display: flex;
