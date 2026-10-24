@@ -81,8 +81,16 @@ a {
   place-items: center;
   padding: 24px 16px;
   background:
-    radial-gradient(1200px 600px at 10% -10%, color-mix(in srgb, var(--mat-sys-primary) 18%, transparent), transparent),
-    radial-gradient(900px 500px at 110% 110%, color-mix(in srgb, var(--mat-sys-tertiary) 14%, transparent), transparent),
+    radial-gradient(
+      1200px 600px at 10% -10%,
+      color-mix(in srgb, var(--mat-sys-primary) 18%, transparent),
+      transparent
+    ),
+    radial-gradient(
+      900px 500px at 110% 110%,
+      color-mix(in srgb, var(--mat-sys-tertiary) 14%, transparent),
+      transparent
+    ),
     var(--surface-muted);
 
   // The outlet host is an empty grid item; as a track it takes half of the free height and
@@ -202,6 +210,68 @@ form {
   gap: 12px;
 }
 
+.connection-test {
+  width: min(560px, 100%);
+  grid-template-columns: minmax(0, 1fr);
+
+  .test-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .test-list {
+    display: grid;
+    gap: 6px;
+    margin: 8px 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    small {
+      margin-left: auto;
+      color: var(--muted);
+    }
+  }
+
+  .test-code {
+    display: grid;
+    gap: 4px;
+    margin: 8px 0;
+    padding: 16px;
+    border-radius: 12px;
+    background: var(--surface-muted);
+    text-align: center;
+
+    span {
+      font-weight: 600;
+    }
+
+    small,
+    p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .code {
+      font-size: 28px;
+      letter-spacing: 0.08em;
+    }
+  }
+
+  button {
+    height: 48px;
+    margin-top: 8px;
+  }
+}
+
 .form-error {
   display: flex;
   align-items: center;
@@ -285,7 +355,9 @@ form {
     color: var(--muted);
     font-weight: 550;
     text-decoration: none;
-    transition: background-color 120ms ease, color 120ms ease;
+    transition:
+      background-color 120ms ease,
+      color 120ms ease;
 
     &:hover {
       color: var(--text);

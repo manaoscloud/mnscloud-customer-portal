@@ -1,5 +1,5 @@
 import { Component, ElementRef, inject, signal, ChangeDetectionStrategy } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -20,6 +20,7 @@ import { PortalI18nService } from '../core/i18n/portal-i18n.service';
     MatInputModule,
     TranslocoPipe,
     LanguagePickerComponent,
+    RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
@@ -70,7 +71,9 @@ import { PortalI18nService } from '../core/i18n/portal-i18n.service';
               matIconButton
               matSuffix
               type="button"
-              [attr.aria-label]="(showPassword() ? 'login.hidePassword' : 'login.showPassword') | transloco"
+              [attr.aria-label]="
+                (showPassword() ? 'login.hidePassword' : 'login.showPassword') | transloco
+              "
               (click)="showPassword.set(!showPassword())"
             >
               <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
@@ -92,6 +95,10 @@ import { PortalI18nService } from '../core/i18n/portal-i18n.service';
           <mat-icon>verified_user</mat-icon>
           {{ 'login.secure' | transloco }}
         </div>
+        <a class="login-footer" routerLink="/teste">
+          <mat-icon>network_check</mat-icon>
+          {{ 'login.connectionTest' | transloco }}
+        </a>
       </div>
     </section>
   `,
