@@ -132,7 +132,10 @@ export class LoginPageComponent {
     try {
       const { login, password } = this.form.getRawValue();
       await this.auth.signIn(login ?? '', password ?? '');
-      await this.router.navigateByUrl('/dashboard');
+      // A generated (temporary) password is changed first, on the profile page.
+      await this.router.navigateByUrl(
+        this.auth.user()?.mustChangePassword ? '/profile' : '/dashboard',
+      );
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : this.i18n.t('login.failed'));
     } finally {

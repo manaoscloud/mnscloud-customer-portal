@@ -44,6 +44,15 @@ export class AuthService {
     void this.router.navigateByUrl('/auth/login');
   }
 
+  /** After the user changed its password: the stored session no longer asks for it. */
+  markPasswordChanged(): void {
+    const user = this.userState();
+    if (!user) return;
+    const next = { ...user, mustChangePassword: false };
+    localStorage.setItem(USER_KEY, JSON.stringify(next));
+    this.userState.set(next);
+  }
+
   private readStoredUser(): CustomerPortalUser | null {
     const raw = localStorage.getItem(USER_KEY);
     if (!raw) return null;
