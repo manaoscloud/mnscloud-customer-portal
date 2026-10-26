@@ -21,3 +21,5 @@ This repository is a public MNSCloud API client for the customer portal.
   endpoints.
 - Visible text goes through Transloco keys in `public/i18n/{pt-BR,en-US,es-ES}.json` (README → Languages);
   run `npm run check:i18n` before pushing.
+- Validation before pushing: `npm run check:i18n`, `npm test` and `npm run build` (the PR CI runs
+  `npm test` and `npm run build`; `npm run check` = i18n + build).
