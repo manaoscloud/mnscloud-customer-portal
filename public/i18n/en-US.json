@@ -148,5 +148,16 @@
   "test.codeHint": "Give this code to support:",
   "test.failed": "The test could not be saved. Try again.",
   "test.privacy": "The test keeps your IP address for 30 days for support.",
-  "login.connectionTest": "Connection problems? Run the test"
+  "login.connectionTest": "Connection problems? Run the test",
+  "nav.ged": "Documents",
+  "ged.title": "Your documents",
+  "ged.description": "View and download documents published by your service provider.",
+  "ged.search": "Search",
+  "ged.error": "Documents could not be accessed. Try again or contact your provider.",
+  "ged.loading": "Loading documents…",
+  "ged.empty": "No documents available.",
+  "ged.download": "Download",
+  "ged.pagination": "Document pagination",
+  "ged.previous": "Previous",
+  "ged.next": "Next"
 }

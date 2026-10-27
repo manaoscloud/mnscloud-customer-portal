@@ -31,6 +31,7 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardPageComponent },
+      { path: 'ged', loadComponent: () => import('./pages/ged/ged-page.component').then((m) => m.GedPageComponent) },
       { path: 'financial', component: FinancialPageComponent },
       { path: 'services', component: ServicesPageComponent },
       { path: 'support', component: SupportPageComponent },

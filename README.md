@@ -88,3 +88,11 @@ A release that fixes a serious problem sets `minimumVersion` in `public/update-p
 to its own version, in the same PR). `mnscloud-webapps` copies it into `build.json`, and tabs
 running below it get an `Important update` notice without `Later`. It still never reloads by
 itself. Keep it `null` for regular releases.
+
+### Published GED documents
+
+The Documents page consumes `GET /customer-portal/ged/documents` and authenticated version
+content endpoints. It displays only documents returned by the API and never selects a tenant,
+customer or storage destination. Publication, service availability, session revocation and
+permissions are enforced server-side. Downloads use the session header and private Blob URLs;
+no provider credentials or permanent storage links reach the browser.
