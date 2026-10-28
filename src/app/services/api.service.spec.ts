@@ -41,4 +41,21 @@ describe('ApiService', () => {
     await expect(api.post('customer-portal/auth/signin', {})).rejects.toThrow();
     expect(revoked).toBe(0);
   });
+  it('downloads private bytes with the session header and handles revoked binary requests', async () => {
+    localStorage.setItem(JWT_KEY, 'synthetic-test-token');
+    let authorization: unknown;
+    globalThis.fetch = (async (_url, init) => {
+      authorization = (init?.headers as Record<string,string>)?.['Authorization'];
+      return new Response(new Uint8Array([1,2,3]), { headers: { 'Content-Type': 'application/pdf' } });
+    }) as typeof fetch;
+    const blob = await api.getBlob('customer-portal/ged/documents/document/versions/version/content');
+    expect(blob.type).toBe('application/pdf');
+    expect(blob.size).toBe(3);
+    expect(authorization).toBe('Bearer synthetic-test-token');
+    respond(401, { error: 'Revoked' });
+    await expect(api.getBlob('customer-portal/ged/documents/document/versions/version/content')).rejects.toThrow();
+    expect(localStorage.getItem(JWT_KEY)).toBeNull();
+    expect(revoked).toBe(1);
+  });
+
 });

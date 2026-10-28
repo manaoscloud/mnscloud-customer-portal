@@ -14,11 +14,15 @@ export class ApiService {
     return this.request<T>('GET', endpoint);
   }
 
+  async getBlob(endpoint: string): Promise<Blob> {
+    return this.request<Blob>('GET', endpoint, undefined, true);
+  }
+
   async post<T>(endpoint: string, body?: unknown): Promise<T> {
     return this.request<T>('POST', endpoint, body);
   }
 
-  private async request<T>(method: string, endpoint: string, body?: unknown): Promise<T> {
+  private async request<T>(method: string, endpoint: string, body?: unknown, binary = false): Promise<T> {
     const token = localStorage.getItem('mnscloud_customer_portal_jwt');
     const response = await fetch(`${this.runtime.apiBaseUrl}/${endpoint.replace(/^\/+/, '')}`, {
       method,
@@ -29,6 +33,7 @@ export class ApiService {
       body: body === undefined ? undefined : JSON.stringify(body),
     });
 
+    if (response.ok && binary) return await response.blob() as T;
     const payload = await response.json().catch(() => ({}));
     if (response.status === 401 && token) {
       // The API revoked this session (sign-out elsewhere, customer or user disabled): drop the

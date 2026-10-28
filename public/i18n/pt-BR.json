@@ -148,5 +148,16 @@
   "test.codeHint": "Informe este código ao suporte:",
   "test.failed": "Não foi possível salvar o teste. Tente novamente.",
   "test.privacy": "O teste guarda seu endereço IP por 30 dias para o suporte.",
-  "login.connectionTest": "Problemas na conexão? Faça o teste"
+  "login.connectionTest": "Problemas na conexão? Faça o teste",
+  "nav.ged": "Documentos",
+  "ged.title": "Seus documentos",
+  "ged.description": "Consulte e baixe os documentos publicados pelo seu prestador de serviço.",
+  "ged.search": "Pesquisar",
+  "ged.error": "Não foi possível acessar os documentos. Tente novamente ou fale com seu prestador.",
+  "ged.loading": "Carregando documentos…",
+  "ged.empty": "Nenhum documento disponível.",
+  "ged.download": "Baixar",
+  "ged.pagination": "Paginação dos documentos",
+  "ged.previous": "Anterior",
+  "ged.next": "Próxima"
 }
