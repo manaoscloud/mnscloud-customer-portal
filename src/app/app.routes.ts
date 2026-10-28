@@ -32,6 +32,11 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardPageComponent },
       { path: 'ged', loadComponent: () => import('./pages/ged/ged-page.component').then((m) => m.GedPageComponent) },
+      {
+        path: 'conversations',
+        loadComponent: () =>
+          import('./pages/conversations/conversations-page.component').then((m) => m.ConversationsPageComponent),
+      },
       { path: 'financial', component: FinancialPageComponent },
       { path: 'services', component: ServicesPageComponent },
       { path: 'support', component: SupportPageComponent },
