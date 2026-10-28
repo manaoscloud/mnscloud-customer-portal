@@ -159,5 +159,22 @@
   "ged.download": "Descargar",
   "ged.pagination": "Paginación de documentos",
   "ged.previous": "Anterior",
-  "ged.next": "Siguiente"
+  "ged.next": "Siguiente",
+  "nav.conversations": "Atención",
+  "conversations.title": "Atención y Conversaciones",
+  "conversations.description": "Consulte sus solicitudes, envíe mensajes y hable con su proveedor de servicios.",
+  "conversations.search": "Buscar conversaciones",
+  "conversations.error": "No se pudieron cargar las conversaciones. Inténtelo más tarde.",
+  "conversations.loading": "Cargando conversaciones…",
+  "conversations.empty": "No se encontraron conversaciones.",
+  "conversations.pagination": "Paginación de conversaciones",
+  "conversations.previous": "Anterior",
+  "conversations.next": "Siguiente",
+  "conversations.open": "Abrir",
+  "conversations.back": "Volver",
+  "conversations.replyPlaceholder": "Escriba su mensaje…",
+  "conversations.send": "Enviar",
+  "conversations.sending": "Enviando…",
+  "conversations.noMessages": "No hay mensajes en esta conversación.",
+  "conversations.closedNotice": "Esta conversación está cerrada."
 }

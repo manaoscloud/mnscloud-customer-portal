@@ -159,5 +159,22 @@
   "ged.download": "Download",
   "ged.pagination": "Document pagination",
   "ged.previous": "Previous",
-  "ged.next": "Next"
+  "ged.next": "Next",
+  "nav.conversations": "Conversations",
+  "conversations.title": "Conversations & Support",
+  "conversations.description": "Track your support requests, send messages and chat with your service provider.",
+  "conversations.search": "Search conversations",
+  "conversations.error": "Could not load conversations. Please try again later.",
+  "conversations.loading": "Loading conversations…",
+  "conversations.empty": "No conversations found.",
+  "conversations.pagination": "Conversations pagination",
+  "conversations.previous": "Previous",
+  "conversations.next": "Next",
+  "conversations.open": "Open",
+  "conversations.back": "Back",
+  "conversations.replyPlaceholder": "Type your message…",
+  "conversations.send": "Send",
+  "conversations.sending": "Sending…",
+  "conversations.noMessages": "No messages in this conversation.",
+  "conversations.closedNotice": "This conversation is closed."
 }
