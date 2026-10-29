@@ -176,5 +176,12 @@
   "conversations.send": "Enviar",
   "conversations.sending": "Enviando…",
   "conversations.noMessages": "Nenhuma mensagem nesta conversa.",
-  "conversations.closedNotice": "Esta conversa está encerrada."
+  "conversations.closedNotice": "Esta conversa está encerrada.",
+  "nav.crm": "CRM",
+  "crm.title": "CRM",
+  "crm.description": "Workspaces comerciais disponibilizados para consulta e acompanhamento.",
+  "crm.loading": "Carregando workspaces…",
+  "crm.error": "Não foi possível acessar os workspaces de CRM. Tente novamente mais tarde.",
+  "crm.empty": "Nenhum workspace de CRM publicado para esta conta.",
+  "crm.active": "Ativo"
 }

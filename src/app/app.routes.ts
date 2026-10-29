@@ -37,6 +37,10 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/conversations/conversations-page.component').then((m) => m.ConversationsPageComponent),
       },
+      {
+        path: 'crm',
+        loadComponent: () => import('./pages/crm/crm-page.component').then((m) => m.CrmPageComponent),
+      },
       { path: 'financial', component: FinancialPageComponent },
       { path: 'services', component: ServicesPageComponent },
       { path: 'support', component: SupportPageComponent },
