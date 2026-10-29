@@ -176,5 +176,12 @@
   "conversations.send": "Enviar",
   "conversations.sending": "Enviando…",
   "conversations.noMessages": "No hay mensajes en esta conversación.",
-  "conversations.closedNotice": "Esta conversación está cerrada."
+  "conversations.closedNotice": "Esta conversación está cerrada.",
+  "nav.crm": "CRM",
+  "crm.title": "CRM",
+  "crm.description": "Espacios de trabajo comerciales disponibles para consulta y seguimiento.",
+  "crm.loading": "Cargando espacios de trabajo…",
+  "crm.error": "No se pudieron acceder a los espacios de trabajo de CRM. Inténtelo más tarde.",
+  "crm.empty": "Ningún espacio de trabajo de CRM publicado para esta cuenta.",
+  "crm.active": "Activo"
 }

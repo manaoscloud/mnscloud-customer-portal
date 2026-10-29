@@ -176,5 +176,12 @@
   "conversations.send": "Send",
   "conversations.sending": "Sending…",
   "conversations.noMessages": "No messages in this conversation.",
-  "conversations.closedNotice": "This conversation is closed."
+  "conversations.closedNotice": "This conversation is closed.",
+  "nav.crm": "CRM",
+  "crm.title": "CRM",
+  "crm.description": "Commercial workspaces available for consultation and follow-up.",
+  "crm.loading": "Loading workspaces…",
+  "crm.error": "Could not access CRM workspaces. Try again later.",
+  "crm.empty": "No CRM workspace published for this account.",
+  "crm.active": "Active"
 }
