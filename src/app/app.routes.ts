@@ -41,6 +41,10 @@ export const routes: Routes = [
         path: 'crm',
         loadComponent: () => import('./pages/crm/crm-page.component').then((m) => m.CrmPageComponent),
       },
+      {
+        path: 'dns',
+        loadComponent: () => import('./pages/dns/dns-page.component').then((m) => m.DnsPageComponent),
+      },
       { path: 'financial', component: FinancialPageComponent },
       { path: 'services', component: ServicesPageComponent },
       { path: 'support', component: SupportPageComponent },
