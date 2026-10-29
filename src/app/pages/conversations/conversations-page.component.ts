@@ -53,9 +53,43 @@ type MessageList = {
           <h1>{{ 'conversations.title' | transloco }}</h1>
           <p>{{ 'conversations.description' | transloco }}</p>
         </div>
+        @if (!activeConversation()) {
+          <button matButton="filled" type="button" (click)="toggleNewModal()">
+            <mat-icon>add</mat-icon>
+            {{ 'conversations.new' | transloco }}
+          </button>
+        }
       </header>
 
       @if (!activeConversation()) {
+        @if (showNewModal()) {
+          <article class="card new-dialog">
+            <h2>{{ 'conversations.newTitle' | transloco }}</h2>
+            <form (ngSubmit)="startConversation()">
+              <mat-form-field class="full-field">
+                <mat-label>{{ 'conversations.subject' | transloco }}</mat-label>
+                <input matInput name="newSubject" [(ngModel)]="newSubject" maxlength="160" />
+              </mat-form-field>
+              <mat-form-field class="full-field">
+                <mat-label>{{ 'conversations.message' | transloco }}</mat-label>
+                <textarea matInput rows="3" name="newMessage" [(ngModel)]="newMessage" required></textarea>
+              </mat-form-field>
+              @if (createError()) {
+                <p class="error-msg" role="alert">{{ 'conversations.createError' | transloco }}</p>
+              }
+              <div class="new-actions">
+                <button matButton type="button" (click)="toggleNewModal()" [disabled]="creating()">
+                  {{ 'conversations.cancel' | transloco }}
+                </button>
+                <button matButton="filled" type="submit" [disabled]="creating() || !newMessage.trim()">
+                  <mat-icon>send</mat-icon>
+                  {{ (creating() ? 'conversations.starting' : 'conversations.start') | transloco }}
+                </button>
+              </div>
+            </form>
+          </article>
+        }
+
         <!-- Conversations List View -->
         <form class="search" (ngSubmit)="load(0)">
           <mat-form-field>
@@ -154,6 +188,12 @@ type MessageList = {
     </section>
   `,
   styles: [`
+    .page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; }
+    .new-dialog { margin-bottom: 20px; padding: 20px; }
+    .new-dialog h2 { margin: 0 0 16px 0; font-size: 1.15rem; }
+    .full-field { width: 100%; display: block; margin-bottom: 8px; }
+    .new-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
+    .error-msg { color: var(--mat-sys-error, #ba1a1a); font-size: 0.9rem; margin: 4px 0 8px 0; }
     .search, .pagination { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
     .search mat-form-field { flex: 1; min-width: 180px; }
     .conversation-list { display: grid; gap: 16px; margin-top: 16px; }
@@ -195,6 +235,48 @@ export class ConversationsPageComponent {
   readonly messagesLoading = signal(false);
   readonly sending = signal(false);
   replyText = '';
+
+  readonly showNewModal = signal(false);
+  readonly creating = signal(false);
+  readonly createError = signal(false);
+  newSubject = '';
+  newMessage = '';
+
+  toggleNewModal() {
+    this.showNewModal.update(v => !v);
+    this.createError.set(false);
+    this.newSubject = '';
+    this.newMessage = '';
+  }
+
+  async startConversation() {
+    const text = this.newMessage.trim();
+    if (!text || this.creating()) return;
+    this.creating.set(true);
+    this.createError.set(false);
+    try {
+      const firstAccount = this.conversations()[0] as (PublishedConversation & { AccountUUID?: string }) | undefined;
+      const accountUUID = firstAccount?.AccountUUID;
+      const res = await this.api.post<ApiEnvelope<{ conversationUUID: string }>>('customer-portal/conversations', {
+        accountUUID,
+        subject: this.newSubject.trim() || null,
+        message: text,
+      });
+      this.toggleNewModal();
+      await this.load(0);
+      const newUUID = res.data?.conversationUUID;
+      if (newUUID) {
+        const createdConv = this.conversations().find(c => c.CnvUUID === newUUID);
+        if (createdConv) {
+          await this.openConversation(createdConv);
+        }
+      }
+    } catch {
+      this.createError.set(true);
+    } finally {
+      this.creating.set(false);
+    }
+  }
 
   private request = 0;
 
