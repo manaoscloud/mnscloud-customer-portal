@@ -28,6 +28,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
       { path: '/conversations', icon: 'forum', label: 'nav.conversations' },
       { path: '/crm', icon: 'workspaces', label: 'nav.crm' },
       { path: '/dns', icon: 'shield', label: 'nav.dns' },
+      { path: '/logs', icon: 'receipt_long', label: 'nav.logs' },
       { path: '/services', icon: 'dns', label: 'nav.services' },
       { path: '/support', icon: 'support_agent', label: 'nav.support' },
     ],
