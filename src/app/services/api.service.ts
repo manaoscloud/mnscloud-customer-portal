@@ -22,6 +22,10 @@ export class ApiService {
     return this.request<T>('POST', endpoint, body);
   }
 
+  async put<T>(endpoint: string, body?: unknown): Promise<T> {
+    return this.request<T>('PUT', endpoint, body);
+  }
+
   private async request<T>(method: string, endpoint: string, body?: unknown, binary = false): Promise<T> {
     const token = localStorage.getItem('mnscloud_customer_portal_jwt');
     const response = await fetch(`${this.runtime.apiBaseUrl}/${endpoint.replace(/^\/+/, '')}`, {
