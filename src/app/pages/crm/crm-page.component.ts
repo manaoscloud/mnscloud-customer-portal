@@ -8,7 +8,6 @@ import type { ApiEnvelope } from '../../models/session.model';
 type PublishedWorkspace = {
   CwsUUID: string;
   CwsName: string;
-  CwsDescription: string | null;
   CwsKind: string;
   CwsStatus: number;
 };
@@ -47,9 +46,6 @@ type WorkspaceResponse = {
             </span>
             <div class="workspace-details">
               <h2>{{ workspace.CwsName }}</h2>
-              @if (workspace.CwsDescription) {
-                <p>{{ workspace.CwsDescription }}</p>
-              }
             </div>
             <div class="workspace-status">
               <span class="badge">{{ 'crm.active' | transloco }}</span>
