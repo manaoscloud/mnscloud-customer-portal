@@ -10,7 +10,6 @@ import type { ApiEnvelope } from '../../models/session.model';
 export type DnsAccount = {
   DacUUID: string;
   DacName: string;
-  DacDescription: string | null;
   DacKind: string;
   DacStatus: number;
   SitesCount: number;
@@ -82,9 +81,6 @@ type SitesResponse = {
               </span>
               <div class="account-details">
                 <h2>{{ acc.DacName }}</h2>
-                @if (acc.DacDescription) {
-                  <p>{{ acc.DacDescription }}</p>
-                }
                 <small class="sites-count">
                   {{ acc.SitesCount }} {{ 'dns.sites' | transloco }}
                 </small>
