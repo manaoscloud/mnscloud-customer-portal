@@ -46,6 +46,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/dns/dns-page.component').then((m) => m.DnsPageComponent),
       },
       {
+        path: 'hr',
+        loadComponent: () => import('./pages/hr/hr-page.component').then((m) => m.HrPageComponent),
+      },
+      {
         path: 'logs',
         loadComponent: () => import('./pages/logs/logs-page.component').then((m) => m.LogsPageComponent),
       },
