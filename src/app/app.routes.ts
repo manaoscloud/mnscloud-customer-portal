@@ -50,6 +50,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/hr/hr-page.component').then((m) => m.HrPageComponent),
       },
       {
+        path: 'infragis',
+        loadComponent: () =>
+          import('./pages/infragis/infragis-page.component').then((m) => m.InfraGisPageComponent),
+      },
+      {
         path: 'logs',
         loadComponent: () => import('./pages/logs/logs-page.component').then((m) => m.LogsPageComponent),
       },
