@@ -329,5 +329,12 @@
   "infragis.location": "Location",
   "infragis.pages": "Asset pages",
   "infragis.previous": "Previous",
-  "infragis.next": "Next"
+  "infragis.next": "Next",
+  "infragis.view": "Asset view",
+  "infragis.list": "List",
+  "infragis.map": "Map",
+  "infragis.mapLabel": "Map of the assets of {{name}}",
+  "infragis.mapError": "The map could not be opened. Try again later.",
+  "infragis.truncated": "Not every asset of this area is shown. Zoom in to see the others.",
+  "infragis.emptyMap": "No asset with a location in this area."
 }

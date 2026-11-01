@@ -1,11 +1,22 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  DestroyRef,
+  ElementRef,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ApiService } from '../../services/api.service';
 import type { ApiEnvelope } from '../../models/session.model';
+import type { Box, FeatureCollection, PortalMap } from './infragis-map';
+import type { InfraGisMapConfig } from './map-config';
 
 export type InfraGisAccount = {
   IgcUUID: string;
@@ -37,6 +48,18 @@ export const EXPORT_FORMATS = [
 ] as const;
 
 const PAGE = 100;
+
+/** Without a platform map base the assets show over a plain background. */
+const NO_BASE: InfraGisMapConfig = {
+  provider: 'none',
+  styleUrl: null,
+  pmtilesUrl: null,
+  attribution: null,
+  centerLatitude: -14.235,
+  centerLongitude: -51.9253,
+  zoom: 3.5,
+  accessToken: null,
+};
 
 /** File name of an export: the account name in lowercase words plus the format extension. */
 export function exportFileName(account: string, extension: string): string {
@@ -115,70 +138,102 @@ export function exportFileName(account: string, extension: string): string {
             @if (exportFailed()) {
               <p class="card" role="alert">{{ 'infragis.exportError' | transloco }}</p>
             }
-            <form class="search" (submit)="$event.preventDefault(); search(query.value)">
-              <input
-                #query
-                type="search"
-                [value]="term()"
-                [attr.aria-label]="'infragis.search' | transloco"
-                [placeholder]="'infragis.search' | transloco"
-              />
-              <button matButton="outlined" type="submit">
-                <mat-icon>search</mat-icon>{{ 'infragis.searchAction' | transloco }}
+            <div class="views" role="group" [attr.aria-label]="'infragis.view' | transloco">
+              <button
+                [matButton]="view() === 'list' ? 'filled' : 'outlined'"
+                type="button"
+                [attr.aria-pressed]="view() === 'list'"
+                (click)="showList()"
+              >
+                <mat-icon>list</mat-icon>{{ 'infragis.list' | transloco }}
               </button>
-            </form>
-
-            @if (loadingAssets()) {
-              <p role="status">{{ 'infragis.loadingAssets' | transloco }}</p>
-            } @else if (assets().length === 0) {
-              <p class="card">{{ 'infragis.emptyAssets' | transloco }}</p>
+              <button
+                [matButton]="view() === 'map' ? 'filled' : 'outlined'"
+                type="button"
+                [attr.aria-pressed]="view() === 'map'"
+                (click)="showMap()"
+              >
+                <mat-icon>map</mat-icon>{{ 'infragis.map' | transloco }}
+              </button>
+            </div>
+            @if (view() === 'map') {
+              @if (mapFailed()) {
+                <p class="card" role="alert">{{ 'infragis.mapError' | transloco }}</p>
+              } @else if (mapNotice()) {
+                <p class="hint" role="status">{{ 'infragis.' + mapNotice() | transloco }}</p>
+              }
+              <div
+                #mapHost
+                class="map-canvas card"
+                role="region"
+                [attr.aria-label]="'infragis.mapLabel' | transloco: { name: account.IgcName }"
+              ></div>
             } @else {
-              <div class="table-wrap card">
-                <table>
-                  <thead>
-                    <tr>
-                      <th scope="col">{{ 'infragis.asset' | transloco }}</th>
-                      <th scope="col">{{ 'infragis.project' | transloco }}</th>
-                      <th scope="col">{{ 'infragis.layer' | transloco }}</th>
-                      <th scope="col">{{ 'infragis.type' | transloco }}</th>
-                      <th scope="col">{{ 'infragis.status' | transloco }}</th>
-                      <th scope="col">{{ 'infragis.location' | transloco }}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (asset of assets(); track asset.IgaUUID) {
+              <form class="search" (submit)="$event.preventDefault(); search(query.value)">
+                <input
+                  #query
+                  type="search"
+                  [value]="term()"
+                  [attr.aria-label]="'infragis.search' | transloco"
+                  [placeholder]="'infragis.search' | transloco"
+                />
+                <button matButton="outlined" type="submit">
+                  <mat-icon>search</mat-icon>{{ 'infragis.searchAction' | transloco }}
+                </button>
+              </form>
+
+              @if (loadingAssets()) {
+                <p role="status">{{ 'infragis.loadingAssets' | transloco }}</p>
+              } @else if (assets().length === 0) {
+                <p class="card">{{ 'infragis.emptyAssets' | transloco }}</p>
+              } @else {
+                <div class="table-wrap card">
+                  <table>
+                    <thead>
                       <tr>
-                        <td>
-                          {{ asset.IgaName }}
-                          @if (asset.IgaExternalID) {
-                            <small class="muted">{{ asset.IgaExternalID }}</small>
-                          }
-                        </td>
-                        <td>{{ asset.ProjectName }}</td>
-                        <td>{{ asset.LayerName }}</td>
-                        <td>{{ asset.AssetTypeName }}</td>
-                        <td>{{ asset.AssetStatusName }}</td>
-                        <td class="mono">{{ location(asset) }}</td>
+                        <th scope="col">{{ 'infragis.asset' | transloco }}</th>
+                        <th scope="col">{{ 'infragis.project' | transloco }}</th>
+                        <th scope="col">{{ 'infragis.layer' | transloco }}</th>
+                        <th scope="col">{{ 'infragis.type' | transloco }}</th>
+                        <th scope="col">{{ 'infragis.status' | transloco }}</th>
+                        <th scope="col">{{ 'infragis.location' | transloco }}</th>
                       </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-              <nav class="pager" [attr.aria-label]="'infragis.pages' | transloco">
-                <span>{{ offset() + 1 }}–{{ offset() + assets().length }} / {{ total() }}</span>
-                <button matButton type="button" [disabled]="offset() === 0" (click)="page(-1)">
-                  <mat-icon>chevron_left</mat-icon>{{ 'infragis.previous' | transloco }}
-                </button>
-                <button
-                  matButton
-                  type="button"
-                  [disabled]="offset() + assets().length >= total()"
-                  (click)="page(1)"
-                >
-                  {{ 'infragis.next' | transloco
-                  }}<mat-icon iconPositionEnd>chevron_right</mat-icon>
-                </button>
-              </nav>
+                    </thead>
+                    <tbody>
+                      @for (asset of assets(); track asset.IgaUUID) {
+                        <tr>
+                          <td>
+                            {{ asset.IgaName }}
+                            @if (asset.IgaExternalID) {
+                              <small class="muted">{{ asset.IgaExternalID }}</small>
+                            }
+                          </td>
+                          <td>{{ asset.ProjectName }}</td>
+                          <td>{{ asset.LayerName }}</td>
+                          <td>{{ asset.AssetTypeName }}</td>
+                          <td>{{ asset.AssetStatusName }}</td>
+                          <td class="mono">{{ location(asset) }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                <nav class="pager" [attr.aria-label]="'infragis.pages' | transloco">
+                  <span>{{ offset() + 1 }}–{{ offset() + assets().length }} / {{ total() }}</span>
+                  <button matButton type="button" [disabled]="offset() === 0" (click)="page(-1)">
+                    <mat-icon>chevron_left</mat-icon>{{ 'infragis.previous' | transloco }}
+                  </button>
+                  <button
+                    matButton
+                    type="button"
+                    [disabled]="offset() + assets().length >= total()"
+                    (click)="page(1)"
+                  >
+                    {{ 'infragis.next' | transloco
+                    }}<mat-icon iconPositionEnd>chevron_right</mat-icon>
+                  </button>
+                </nav>
+              }
             }
           </section>
         }
@@ -274,6 +329,21 @@ export function exportFileName(account: string, extension: string): string {
       .mono {
         font-family: ui-monospace, monospace;
       }
+      .views {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .map-canvas {
+        height: min(70vh, 560px);
+        padding: 0;
+        overflow: hidden;
+      }
+      .hint {
+        margin: 0 0 8px;
+        font-size: 0.85rem;
+        color: var(--text-secondary, #666);
+      }
       .pager {
         display: flex;
         flex-wrap: wrap;
@@ -287,7 +357,16 @@ export function exportFileName(account: string, extension: string): string {
 })
 export class InfraGisPageComponent {
   private readonly api = inject(ApiService);
+  private readonly transloco = inject(TranslocoService);
+  private readonly changes = inject(ChangeDetectorRef);
+  private readonly mapHost = viewChild<ElementRef<HTMLDivElement>>('mapHost');
+  private portalMap: PortalMap | null = null;
+  private mapConfig: InfraGisMapConfig | null = null;
   readonly formats = EXPORT_FORMATS;
+  readonly view = signal<'list' | 'map'>('list');
+  readonly mapFailed = signal(false);
+  /** `truncated` (more assets than shown in the area) or `emptyMap`. */
+  readonly mapNotice = signal<'truncated' | 'emptyMap' | null>(null);
   readonly accounts = signal<InfraGisAccount[]>([]);
   readonly selected = signal<InfraGisAccount | null>(null);
   readonly assets = signal<InfraGisAsset[]>([]);
@@ -301,6 +380,7 @@ export class InfraGisPageComponent {
   readonly error = signal(false);
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => this.closeMap());
     void this.load();
   }
 
@@ -326,7 +406,84 @@ export class InfraGisPageComponent {
     this.term.set('');
     this.offset.set(0);
     this.exportFailed.set(false);
-    await this.loadAssets();
+    if (this.view() === 'map') await this.openMap();
+    else await this.loadAssets();
+  }
+
+  showList() {
+    if (this.view() === 'list') return;
+    this.closeMap();
+    this.view.set('list');
+    void this.loadAssets();
+  }
+
+  async showMap() {
+    if (this.view() === 'map') return;
+    this.view.set('map');
+    await this.openMap();
+  }
+
+  /** MapLibre loads only here (its own chunk), on the container rendered for the map view. */
+  private async openMap() {
+    this.closeMap();
+    this.mapFailed.set(false);
+    this.mapNotice.set(null);
+    this.changes.detectChanges();
+    const account = this.selected();
+    const host = this.mapHost()?.nativeElement;
+    if (!account || !host) return;
+    try {
+      if (!this.mapConfig) {
+        const response = await this.api.get<ApiEnvelope<{ item: InfraGisMapConfig }>>(
+          'customer-portal/infragis/map/config',
+        );
+        this.mapConfig = response.data?.item ?? null;
+      }
+      const { createPortalMap } = await import('./infragis-map');
+      if (
+        this.selected() !== account ||
+        this.view() !== 'map' ||
+        this.mapHost()?.nativeElement !== host
+      ) {
+        return;
+      }
+      this.portalMap = createPortalMap(
+        host,
+        this.mapConfig ?? NO_BASE,
+        this.transloco.getActiveLang().slice(0, 2),
+        (box) => this.features(account, box),
+        (collection) =>
+          this.mapNotice.set(
+            collection.truncated
+              ? 'truncated'
+              : collection.features.length === 0
+                ? 'emptyMap'
+                : null,
+          ),
+      );
+    } catch {
+      this.mapFailed.set(true);
+    }
+  }
+
+  private async features(account: InfraGisAccount, box: Box): Promise<FeatureCollection> {
+    const query = new URLSearchParams({
+      accountUUID: account.IgcUUID,
+      minLng: String(box.minLng),
+      minLat: String(box.minLat),
+      maxLng: String(box.maxLng),
+      maxLat: String(box.maxLat),
+      limit: '2000',
+    });
+    const response = await this.api.get<ApiEnvelope<FeatureCollection>>(
+      `customer-portal/infragis/map/features?${query}`,
+    );
+    return response.data ?? { type: 'FeatureCollection', features: [], total: 0, truncated: false };
+  }
+
+  private closeMap() {
+    this.portalMap?.destroy();
+    this.portalMap = null;
   }
 
   async search(value: string) {
