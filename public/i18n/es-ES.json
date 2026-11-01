@@ -329,5 +329,12 @@
   "infragis.location": "Ubicación",
   "infragis.pages": "Páginas de activos",
   "infragis.previous": "Anterior",
-  "infragis.next": "Siguiente"
+  "infragis.next": "Siguiente",
+  "infragis.view": "Vista de los activos",
+  "infragis.list": "Lista",
+  "infragis.map": "Mapa",
+  "infragis.mapLabel": "Mapa de los activos de {{name}}",
+  "infragis.mapError": "No fue posible abrir el mapa. Inténtelo de nuevo más tarde.",
+  "infragis.truncated": "No se muestran todos los activos de esta área. Acerque el mapa para ver los demás.",
+  "infragis.emptyMap": "Ningún activo con ubicación en esta área."
 }

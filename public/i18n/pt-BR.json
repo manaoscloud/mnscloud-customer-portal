@@ -329,5 +329,12 @@
   "infragis.location": "Localização",
   "infragis.pages": "Páginas de ativos",
   "infragis.previous": "Anterior",
-  "infragis.next": "Próxima"
+  "infragis.next": "Próxima",
+  "infragis.view": "Visualização dos ativos",
+  "infragis.list": "Lista",
+  "infragis.map": "Mapa",
+  "infragis.mapLabel": "Mapa dos ativos de {{name}}",
+  "infragis.mapError": "Não foi possível abrir o mapa. Tente novamente mais tarde.",
+  "infragis.truncated": "Nem todos os ativos desta área aparecem. Aproxime o mapa para ver os demais.",
+  "infragis.emptyMap": "Nenhum ativo com localização nesta área."
 }
