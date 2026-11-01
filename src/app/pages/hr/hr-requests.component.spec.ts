@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { provideTransloco, TranslocoTestingModule } from '@jsverse/transloco';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+import en from '../../../../public/i18n/en-US.json';
 import { ApiError, ApiService } from '../../services/api.service';
 import { day, HrRequestsComponent, localInstant } from './hr-requests.component';
 
@@ -51,8 +52,15 @@ describe('HR portal requests', () => {
       getBlob: async () => new Blob(),
     };
     TestBed.configureTestingModule({
-      imports: [HrRequestsComponent, TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['pt-BR'], defaultLang: 'pt-BR' } })],
-      providers: [{ provide: ApiService, useValue: api }, provideTransloco({ config: { availableLangs: ['pt-BR'], defaultLang: 'pt-BR' } })],
+      imports: [
+        HrRequestsComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { 'en-US': en },
+          translocoConfig: { availableLangs: ['en-US'], defaultLang: 'en-US' },
+          preloadLangs: true,
+        }),
+      ],
+      providers: [{ provide: ApiService, useValue: api }],
     });
   });
 
