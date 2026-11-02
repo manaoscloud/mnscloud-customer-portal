@@ -42,6 +42,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/crm/crm-page.component').then((m) => m.CrmPageComponent),
       },
       {
+        path: 'authentication',
+        loadComponent: () =>
+          import('./pages/authentication/authentication-page.component').then((m) => m.AuthenticationPageComponent),
+      },
+      {
         path: 'dns',
         loadComponent: () => import('./pages/dns/dns-page.component').then((m) => m.DnsPageComponent),
       },
