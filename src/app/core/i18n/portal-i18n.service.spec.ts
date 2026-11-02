@@ -24,6 +24,13 @@ describe('PortalI18nService', () => {
     });
   });
 
+  // The runner shares globals between spec files: leave no browser language or manual choice behind.
+  afterEach(() => {
+    localStorage.clear();
+    delete (navigator as { language?: string }).language;
+    document.documentElement.lang = '';
+  });
+
   it('follows the browser like the App: pt → pt-BR, es → es-ES, anything else → en-US', () => {
     setBrowserLanguage('pt-PT');
     expect(detectPortalLanguage()).toBe('pt-BR');

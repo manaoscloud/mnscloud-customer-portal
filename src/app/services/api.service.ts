@@ -1,6 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { RuntimeConfigService } from '../core/runtime/runtime-config.service';
 
+/** Refused request: the message of the API plus the HTTP status and code to tell cases apart. */
+export class ApiError extends Error {
+  constructor(message: string, readonly status: number, readonly code?: string) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly runtime = inject(RuntimeConfigService);
@@ -47,7 +55,7 @@ export class ApiService {
       this.sessionRevoked();
     }
     if (!response.ok) {
-      throw new Error(payload?.error ?? payload?.message ?? 'Request failed.');
+      throw new ApiError(payload?.error ?? payload?.message ?? 'Request failed.', response.status, payload?.code);
     }
 
     return payload as T;
