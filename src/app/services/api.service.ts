@@ -47,7 +47,7 @@ export class ApiService {
       this.sessionRevoked();
     }
     if (!response.ok) {
-      throw new Error(payload?.error ?? payload?.message ?? 'Request failed.');
+      throw Object.assign(new Error(payload?.error ?? payload?.message ?? payload?.detail ?? 'Request failed.'), { status: response.status, code: payload?.code, fields: payload?.fields });
     }
 
     return payload as T;
