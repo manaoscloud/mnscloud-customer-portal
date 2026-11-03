@@ -1,78 +1,202 @@
 <section class="page">
-  <header class="page-header"><div><h1>{{ 'crm.title' | transloco }}</h1><p>{{ 'crm.description' | transloco }}</p></div></header>
-  @if (error()) { <p role="alert" class="error">{{ error() | transloco }}</p> }
-  <label class="workspace-picker">{{ 'crm.workspace' | transloco }}
+  <header class="page-header">
+    <div>
+      <h1>{{ 'crm.title' | transloco }}</h1>
+      <p>{{ 'crm.description' | transloco }}</p>
+    </div>
+  </header>
+  @if (error()) {
+    <p role="alert" class="error">{{ error() | transloco }}</p>
+  }
+  <label class="workspace-picker"
+    >{{ 'crm.workspace' | transloco }}
     <select [ngModel]="workspace()?.CwsUUID ?? ''" (ngModelChange)="selectWorkspace($event)">
       <option value="">{{ 'crm.chooseWorkspace' | transloco }}</option>
-      @for (item of workspaces(); track item.CwsUUID) { <option [value]="item.CwsUUID">{{ item.CwsName }}</option> }
+      @for (item of workspaces(); track item.CwsUUID) {
+        <option [value]="item.CwsUUID">{{ item.CwsName }}</option>
+      }
     </select>
   </label>
-  @if (!loading() && !workspaces().length && !error()) { <p>{{ 'crm.empty' | transloco }}</p> }
+  @if (!loading() && !workspaces().length && !error()) {
+    <p>{{ 'crm.empty' | transloco }}</p>
+  }
   @if (workspace()) {
     <nav class="toolbar" [attr.aria-label]="'crm.sections' | transloco">
-      @for (item of sections; track item) { <button type="button" (click)="selectSection(item)" [attr.aria-pressed]="section() === item">{{ ('crm.' + item) | transloco }}</button> }
+      @for (item of sections; track item) {
+        <button
+          type="button"
+          (click)="selectSection(item)"
+          [attr.aria-pressed]="section() === item"
+        >
+          {{ 'crm.' + item | transloco }}
+        </button>
+      }
     </nav>
     <div class="toolbar">
-      <label>{{ 'crm.search' | transloco }}<input type="search" [(ngModel)]="search" (keydown.enter)="loadRecords(0)" maxlength="160"></label>
+      <label
+        >{{ 'crm.search' | transloco
+        }}<input
+          type="search"
+          [(ngModel)]="search"
+          (keydown.enter)="loadRecords(0)"
+          maxlength="160"
+      /></label>
       <button type="button" (click)="loadRecords(0)">{{ 'crm.search' | transloco }}</button>
-      @if (workspace()?.canWrite) { <button type="button" (click)="open()">{{ 'crm.create' | transloco }}</button> }
+      @if (workspace()?.canWrite) {
+        <button type="button" (click)="open()">{{ 'crm.create' | transloco }}</button>
+      }
     </div>
-    @if (loading()) { <p role="status">{{ 'crm.loading' | transloco }}</p> }
-    @else if (!rows().length && !error()) { <p>{{ 'crm.noRecords' | transloco }}</p> }
+    @if (loading()) {
+      <p role="status">{{ 'crm.loading' | transloco }}</p>
+    } @else if (!rows().length && !error()) {
+      <p>{{ 'crm.noRecords' | transloco }}</p>
+    }
     <div class="records">
       @for (row of rows(); track row[prefix() + 'UUID']) {
         <article class="card record">
-          <div><h2>{{ rowName(row) }}</h2>
-            @if (rowState(row)) { <p>{{ ('crm.value.' + rowState(row)) | transloco }}</p> }
-            <p>{{ (row[prefix() + 'Status'] === 1 ? 'crm.active' : 'crm.inactive') | transloco }}</p>
-            @if (row['CrmStageCstUUIDName']) { <p>{{ row['CrmStageCstUUIDName'] }}</p> }
-            @if (row['CleEmail']) { <p>{{ row['CleEmail'] }}</p> }
-            @if (row['CatNotes']) { <p>{{ row['CatNotes'] }}</p> }
+          <div>
+            <h2>{{ rowName(row) }}</h2>
+            @if (rowState(row)) {
+              <p>{{ 'crm.value.' + rowState(row) | transloco }}</p>
+            }
+            <p>
+              {{ (row[prefix() + 'Status'] === 1 ? 'crm.active' : 'crm.inactive') | transloco }}
+            </p>
+            @if (row['CrmStageCstUUIDName']) {
+              <p>{{ row['CrmStageCstUUIDName'] }}</p>
+            }
+            @if (row['CleEmail']) {
+              <p>{{ row['CleEmail'] }}</p>
+            }
+            @if (row['CatNotes']) {
+              <p>{{ row['CatNotes'] }}</p>
+            }
           </div>
           <div class="toolbar">
-            @if (editable(row)) { <button type="button" (click)="open(row)">{{ 'crm.edit' | transloco }}</button> }
-            @if (workspace()?.canWrite && section() === 'leads' && row['CleState'] === 'qualified') { <button type="button" (click)="open(row, true)">{{ 'crm.convert' | transloco }}</button> }
+            @if (editable(row)) {
+              <button type="button" (click)="open(row)">{{ 'crm.edit' | transloco }}</button>
+            }
+            @if (
+              workspace()?.canWrite && section() === 'leads' && row['CleState'] === 'qualified'
+            ) {
+              <button type="button" (click)="open(row, true)">
+                {{ 'crm.convert' | transloco }}
+              </button>
+            }
           </div>
         </article>
       }
     </div>
     <div class="toolbar pagination">
       <span>{{ 'crm.total' | transloco }}: {{ total() }}</span>
-      <button type="button" [disabled]="loading() || offset() === 0" (click)="loadRecords(offset() - 25)">{{ 'crm.previous' | transloco }}</button>
-      <button type="button" [disabled]="loading() || offset() + 25 >= total()" (click)="loadRecords(offset() + 25)">{{ 'crm.next' | transloco }}</button>
+      <button
+        type="button"
+        [disabled]="loading() || offset() === 0"
+        (click)="loadRecords(offset() - 25)"
+      >
+        {{ 'crm.previous' | transloco }}
+      </button>
+      <button
+        type="button"
+        [disabled]="loading() || offset() + 25 >= total()"
+        (click)="loadRecords(offset() + 25)"
+      >
+        {{ 'crm.next' | transloco }}
+      </button>
     </div>
   }
 </section>
 <ng-template #editor>
-  <h2 mat-dialog-title>{{ (conversion ? 'crm.convert' : original ? 'crm.edit' : 'crm.create') | transloco }}</h2>
+  <h2 mat-dialog-title>
+    {{ (conversion ? 'crm.convert' : original ? 'crm.edit' : 'crm.create') | transloco }}
+  </h2>
   <mat-dialog-content>
     <p>{{ (conversion ? 'crm.convertHelp' : 'crm.formHelp') | transloco }}</p>
-    @if (formError()) { <p role="alert" class="error">{{ formError() | transloco }}</p> }
+    @if (formError()) {
+      <p role="alert" class="error">{{ formError() | transloco }}</p>
+    }
     <form ngNoForm #recordForm [class.attempted]="attempted" class="form-grid">
       @for (field of fields; track field.key) {
-        <label [class.wide]="field.type === 'textarea'">{{ ('crm.field.' + field.label) | transloco }}{{ field.required ? ' *' : '' }}
+        <label [class.wide]="field.type === 'textarea'"
+          >{{ 'crm.field.' + field.label | transloco }}{{ field.required ? ' *' : '' }}
           @if (field.lookup) {
-            <div class="lookup-search"><input type="search" [attr.aria-label]="'crm.search' | transloco" [(ngModel)]="lookupSearch[field.key]" [ngModelOptions]="{standalone:true}" maxlength="160" (keydown.enter)="$event.preventDefault(); loadLookup(field)"><button type="button" (click)="loadLookup(field)">{{ 'crm.search' | transloco }}</button></div>
-            <select [(ngModel)]="form[field.key]" [ngModelOptions]="{standalone:true}" [required]="!!field.required">
+            <div class="lookup-search">
+              <input
+                type="search"
+                [attr.aria-label]="'crm.search' | transloco"
+                [(ngModel)]="lookupSearch[field.key]"
+                [ngModelOptions]="{ standalone: true }"
+                maxlength="160"
+                (keydown.enter)="$event.preventDefault(); loadLookup(field)"
+              /><button type="button" (click)="loadLookup(field)">
+                {{ 'crm.search' | transloco }}
+              </button>
+            </div>
+            <select
+              [(ngModel)]="form[field.key]"
+              [ngModelOptions]="{ standalone: true }"
+              [required]="!!field.required"
+            >
               <option value="">{{ 'crm.select' | transloco }}</option>
-              @if (selectedMissing(field)) { <option [value]="form[field.key]">{{ original?.[field.key + 'Name'] ?? ('crm.selected' | transloco) }}</option> }
-              @for (option of lookups()[field.key] ?? []; track $index) { <option [value]="option[field.prefix + 'UUID']">{{ option[field.prefix + 'Name'] }}</option> }
+              @if (selectedMissing(field)) {
+                <option [value]="form[field.key]">
+                  {{ original?.[field.key + 'Name'] ?? ('crm.selected' | transloco) }}
+                </option>
+              }
+              @for (option of lookups()[field.key] ?? []; track $index) {
+                <option [value]="option[field.prefix + 'UUID']">
+                  {{ option[field.prefix + 'Name'] }}
+                </option>
+              }
             </select>
-            @if ((lookups()[field.key]?.length ?? 0) < (lookupTotals()[field.key] ?? 0)) { <button type="button" (click)="loadLookup(field, true)">{{ 'crm.more' | transloco }}</button> }
+            @if ((lookups()[field.key]?.length ?? 0) < (lookupTotals()[field.key] ?? 0)) {
+              <button type="button" (click)="loadLookup(field, true)">
+                {{ 'crm.more' | transloco }}
+              </button>
+            }
           } @else if (field.options) {
-            <select [(ngModel)]="form[field.key]" [ngModelOptions]="{standalone:true}" [required]="!!field.required">
-              @for (option of field.options; track option) { <option [value]="option">{{ ('crm.value.' + option) | transloco }}</option> }
+            <select
+              [(ngModel)]="form[field.key]"
+              [ngModelOptions]="{ standalone: true }"
+              [required]="!!field.required"
+            >
+              @for (option of field.options; track option) {
+                <option [value]="option">{{ 'crm.value.' + option | transloco }}</option>
+              }
             </select>
           } @else if (field.type === 'status') {
-            <select [(ngModel)]="form[field.key]" [ngModelOptions]="{standalone:true}"><option [ngValue]="1">{{ 'crm.active' | transloco }}</option><option [ngValue]="0">{{ 'crm.inactive' | transloco }}</option></select>
+            <select [(ngModel)]="form[field.key]" [ngModelOptions]="{ standalone: true }">
+              <option [ngValue]="1">{{ 'crm.active' | transloco }}</option>
+              <option [ngValue]="0">{{ 'crm.inactive' | transloco }}</option>
+            </select>
           } @else if (field.type === 'textarea') {
-            <textarea rows="4" [(ngModel)]="form[field.key]" [ngModelOptions]="{standalone:true}" [required]="!!field.required" [attr.maxlength]="field.max"></textarea>
+            <textarea
+              rows="4"
+              [(ngModel)]="form[field.key]"
+              [ngModelOptions]="{ standalone: true }"
+              [required]="!!field.required"
+              [attr.maxlength]="field.max"
+            ></textarea>
           } @else {
-            <input [type]="field.type ?? 'text'" [(ngModel)]="form[field.key]" [ngModelOptions]="{standalone:true}" [required]="!!field.required" [attr.maxlength]="field.max" [attr.min]="field.type === 'number' ? 0 : null" [attr.step]="field.type === 'number' ? '0.000001' : null">
+            <input
+              [type]="field.type ?? 'text'"
+              [(ngModel)]="form[field.key]"
+              [ngModelOptions]="{ standalone: true }"
+              [required]="!!field.required"
+              [attr.maxlength]="field.max"
+              [attr.min]="field.type === 'number' ? 0 : null"
+              [attr.step]="field.type === 'number' ? '0.000001' : null"
+            />
           }
         </label>
       }
     </form>
   </mat-dialog-content>
-  <mat-dialog-actions align="end"><button type="button" [disabled]="saving()" (click)="close()">{{ 'crm.cancel' | transloco }}</button><button type="button" [disabled]="saving()" (click)="save(recordForm)">{{ (saving() ? 'crm.saving' : 'crm.save') | transloco }}</button></mat-dialog-actions>
+  <mat-dialog-actions align="end"
+    ><button type="button" [disabled]="saving()" (click)="close()">
+      {{ 'crm.cancel' | transloco }}</button
+    ><button type="button" [disabled]="saving()" (click)="save(recordForm)">
+      {{ (saving() ? 'crm.saving' : 'crm.save') | transloco }}
+    </button></mat-dialog-actions
+  >
 </ng-template>
