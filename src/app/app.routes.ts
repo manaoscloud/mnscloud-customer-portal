@@ -63,6 +63,10 @@ export const routes: Routes = [
         path: 'logs',
         loadComponent: () => import('./pages/logs/logs-page.component').then((m) => m.LogsPageComponent),
       },
+      {
+        path: 'webhost',
+        loadComponent: () => import('./pages/webhost/webhost-page.component').then((m) => m.WebhostPageComponent),
+      },
       { path: 'financial', component: FinancialPageComponent },
       { path: 'services', component: ServicesPageComponent },
       { path: 'support', component: SupportPageComponent },
