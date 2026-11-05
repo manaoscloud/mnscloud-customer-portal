@@ -34,6 +34,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
       { path: '/infragis', icon: 'map', label: 'nav.infragis' },
       { path: '/authentication', icon: 'router', label: 'nav.authentication' },
       { path: '/webhost', icon: 'language', label: 'nav.webhost' },
+      { path: '/voip', icon: 'phone_in_talk', label: 'nav.voip' },
       { path: '/services', icon: 'dns', label: 'nav.services' },
       { path: '/support', icon: 'support_agent', label: 'nav.support' },
     ],
