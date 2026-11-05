@@ -452,5 +452,14 @@
   "crm.value.email": "Correo",
   "crm.value.planned": "Planificada",
   "crm.value.done": "Completada",
-  "crm.value.cancelled": "Cancelada"
+  "crm.value.cancelled": "Cancelada",
+  "dns.managedServers": "Servidores en su red",
+  "dns.managedServersDescription": "Servidores DNS instalados en su red y operados por su proveedor.",
+  "dns.serverState": "Estado",
+  "dns.serverLastSeen": "Último contacto",
+  "dns.serverStates.awaiting_installation": "Esperando instalación",
+  "dns.serverStates.installing": "Instalando",
+  "dns.serverStates.operational": "Operativo",
+  "dns.serverStates.failed": "Falla en la instalación",
+  "dns.serverStates.uninstalled": "Desinstalado"
 }
