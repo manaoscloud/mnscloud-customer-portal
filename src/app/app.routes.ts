@@ -64,14 +64,12 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/logs/logs-page.component').then((m) => m.LogsPageComponent),
       },
       {
-      {
         path: 'webhost',
         loadComponent: () => import('./pages/webhost/webhost-page.component').then((m) => m.WebhostPageComponent),
       },
       {
         path: 'voip',
         loadComponent: () => import('./pages/voip/voip-page.component').then((m) => m.VoipPageComponent),
-      },
       },
       { path: 'financial', component: FinancialPageComponent },
       { path: 'services', component: ServicesPageComponent },
