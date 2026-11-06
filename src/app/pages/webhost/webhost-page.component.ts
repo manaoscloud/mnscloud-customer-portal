@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -106,6 +107,7 @@ type DnsResponse = {
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatCardModule,
     MatIconModule,
     MatButtonModule,
@@ -121,6 +123,12 @@ type DnsResponse = {
           <p>{{ 'webhost.description' | transloco }}</p>
         </div>
       </header>
+
+      @if (actionStatus()) {
+        <div class="action-banner card" [class.success]="actionStatus() === 'success'" [class.error]="actionStatus() === 'error'">
+          <span>{{ actionMessage() }}</span>
+        </div>
+      }
 
       @if (error()) {
         <p class="card" role="alert">{{ 'webhost.error' | transloco }}</p>
@@ -200,6 +208,40 @@ type DnsResponse = {
               @if (current.CanEmails) {
                 <mat-tab [label]="'webhost.tab.emails' | transloco">
                   <div class="tab-content">
+                    <div class="tab-actions-bar">
+                      <button mat-flat-button color="primary" (click)="toggleCreateEmail()">
+                        <mat-icon>add</mat-icon> {{ 'webhost.emails.createBtn' | transloco }}
+                      </button>
+                    </div>
+
+                    @if (showCreateEmail()) {
+                      <div class="card inline-form">
+                        <div class="form-row">
+                          <div class="form-group">
+                            <label>{{ 'webhost.emails.localPart' | transloco }}</label>
+                            <div class="input-suffix">
+                              <input [(ngModel)]="emailLocalPart" placeholder="contato" />
+                              <span class="suffix-label">&#64;{{ current.Domain }}</span>
+                            </div>
+                          </div>
+                          <div class="form-group">
+                            <label>{{ 'webhost.emails.quota' | transloco }}</label>
+                            <input type="number" [(ngModel)]="emailQuotaMb" placeholder="500" />
+                          </div>
+                          <div class="form-group">
+                            <label>{{ 'webhost.emails.password' | transloco }}</label>
+                            <input type="password" [(ngModel)]="emailPassword" />
+                          </div>
+                        </div>
+                        <div class="form-actions">
+                          <button mat-flat-button color="primary" [disabled]="actionLoading() || !emailLocalPart()" (click)="createEmail(current)">
+                            {{ 'webhost.emails.createSubmit' | transloco }}
+                          </button>
+                          <button mat-button (click)="toggleCreateEmail()">{{ 'webhost.emails.cancel' | transloco }}</button>
+                        </div>
+                      </div>
+                    }
+
                     @if (loadingSub()) {
                       <p role="status">{{ 'webhost.loading' | transloco }}</p>
                     } @else if (emails().length === 0) {
@@ -215,10 +257,55 @@ type DnsResponse = {
                                 <small>Quota: {{ mail.HweQuotaMb ? mail.HweQuotaMb + ' MB' : ('webhost.quotaUnlimited' | transloco) }}</small>
                               </div>
                             </div>
-                            <span class="badge" [class.badge-active]="mail.HweStatus === 'active'">
-                              {{ mail.HweStatus === 'active' ? ('webhost.status.active' | transloco) : mail.HweStatus }}
-                            </span>
+                            <div class="resource-actions">
+                              <span class="badge" [class.badge-active]="mail.HweStatus === 'active'">
+                                {{ mail.HweStatus === 'active' ? ('webhost.status.active' | transloco) : mail.HweStatus }}
+                              </span>
+                              <button mat-icon-button (click)="openQuotaModal(mail)" [title]="'webhost.emails.updateQuota' | transloco">
+                                <mat-icon>data_usage</mat-icon>
+                              </button>
+                              <button mat-icon-button (click)="openPasswordModal(mail)" [title]="'webhost.emails.resetPassword' | transloco">
+                                <mat-icon>vpn_key</mat-icon>
+                              </button>
+                              <button mat-icon-button color="warn" (click)="deleteEmail(current, mail)" [title]="'webhost.emails.delete' | transloco">
+                                <mat-icon>delete</mat-icon>
+                              </button>
+                            </div>
                           </div>
+
+                          @if (editingQuotaEmailUUID() === mail.HweUUID) {
+                            <div class="card inline-form edit-subcard">
+                              <div class="form-row">
+                                <div class="form-group">
+                                  <label>{{ 'webhost.emails.newQuota' | transloco }}</label>
+                                  <input type="number" [(ngModel)]="editQuotaValue" />
+                                </div>
+                              </div>
+                              <div class="form-actions">
+                                <button mat-flat-button color="primary" [disabled]="actionLoading()" (click)="saveEmailQuota(current, mail.HweUUID)">
+                                  {{ 'webhost.emails.saveQuota' | transloco }}
+                                </button>
+                                <button mat-button (click)="cancelEditQuota()">{{ 'webhost.emails.cancel' | transloco }}</button>
+                              </div>
+                            </div>
+                          }
+
+                          @if (resettingPasswordEmailUUID() === mail.HweUUID) {
+                            <div class="card inline-form edit-subcard">
+                              <div class="form-row">
+                                <div class="form-group">
+                                  <label>{{ 'webhost.emails.newPassword' | transloco }}</label>
+                                  <input type="password" [(ngModel)]="resetPasswordValue" />
+                                </div>
+                              </div>
+                              <div class="form-actions">
+                                <button mat-flat-button color="primary" [disabled]="actionLoading() || !resetPasswordValue()" (click)="saveEmailPassword(current, mail.HweUUID)">
+                                  {{ 'webhost.emails.savePassword' | transloco }}
+                                </button>
+                                <button mat-button (click)="cancelResetPassword()">{{ 'webhost.emails.cancel' | transloco }}</button>
+                              </div>
+                            </div>
+                          }
                         }
                       </div>
                     }
@@ -230,39 +317,163 @@ type DnsResponse = {
               @if (current.CanDatabases) {
                 <mat-tab [label]="'webhost.tab.databases' | transloco">
                   <div class="tab-content">
-                    @if (loadingSub()) {
-                      <p role="status">{{ 'webhost.loading' | transloco }}</p>
-                    } @else if (databases()?.databases?.length === 0 && databases()?.users?.length === 0) {
-                      <p class="card">{{ 'webhost.databases.empty' | transloco }}</p>
-                    } @else {
-                      <div class="db-section">
+                    <div class="db-section">
+                      <div class="section-header">
                         <h4>{{ 'webhost.databases.title' | transloco }}</h4>
-                        <div class="resource-list">
-                          @for (db of databases()?.databases; track db.HwdUUID) {
-                            <div class="card resource-item">
-                              <div class="resource-main">
-                                <mat-icon class="resource-icon">storage</mat-icon>
-                                <strong>{{ db.HwdName }}</strong>
-                              </div>
-                              <span class="badge" [class.badge-active]="db.HwdStatus === 'active'">{{ db.HwdStatus }}</span>
-                            </div>
-                          }
-                        </div>
-
-                        <h4 class="mt-4">{{ 'webhost.databases.users' | transloco }}</h4>
-                        <div class="resource-list">
-                          @for (user of databases()?.users; track user.HduUUID) {
-                            <div class="card resource-item">
-                              <div class="resource-main">
-                                <mat-icon class="resource-icon">person</mat-icon>
-                                <strong>{{ user.HduName }}</strong>
-                              </div>
-                              <span class="badge" [class.badge-active]="user.HduStatus === 'active'">{{ user.HduStatus }}</span>
-                            </div>
-                          }
-                        </div>
+                        <button mat-stroked-button (click)="toggleCreateDb()">
+                          <mat-icon>add</mat-icon> {{ 'webhost.databases.createDbBtn' | transloco }}
+                        </button>
                       </div>
-                    }
+
+                      @if (showCreateDb()) {
+                        <div class="card inline-form">
+                          <div class="form-row">
+                            <div class="form-group">
+                              <label>{{ 'webhost.databases.dbName' | transloco }}</label>
+                              <div class="input-prefix">
+                                <span class="prefix-label">{{ current.HwhUsername }}_</span>
+                                <input [(ngModel)]="dbName" placeholder="db" />
+                              </div>
+                            </div>
+                          </div>
+                          <div class="form-actions">
+                            <button mat-flat-button color="primary" [disabled]="actionLoading() || !dbName()" (click)="createDatabase(current)">
+                              {{ 'webhost.databases.createDbSubmit' | transloco }}
+                            </button>
+                            <button mat-button (click)="toggleCreateDb()">{{ 'webhost.emails.cancel' | transloco }}</button>
+                          </div>
+                        </div>
+                      }
+
+                      <div class="resource-list">
+                        @for (db of databases()?.databases; track db.HwdUUID) {
+                          <div class="card resource-item">
+                            <div class="resource-main">
+                              <mat-icon class="resource-icon">storage</mat-icon>
+                              <strong>{{ db.HwdName }}</strong>
+                            </div>
+                            <div class="resource-actions">
+                              <span class="badge" [class.badge-active]="db.HwdStatus === 'active'">{{ db.HwdStatus }}</span>
+                              <button mat-icon-button color="warn" (click)="deleteDatabase(current, db)" [title]="'webhost.databases.delete' | transloco">
+                                <mat-icon>delete</mat-icon>
+                              </button>
+                            </div>
+                          </div>
+                        }
+                      </div>
+
+                      <div class="section-header mt-4">
+                        <h4>{{ 'webhost.databases.users' | transloco }}</h4>
+                        <button mat-stroked-button (click)="toggleCreateUser()">
+                          <mat-icon>add</mat-icon> {{ 'webhost.databases.createUserBtn' | transloco }}
+                        </button>
+                      </div>
+
+                      @if (showCreateUser()) {
+                        <div class="card inline-form">
+                          <div class="form-row">
+                            <div class="form-group">
+                              <label>{{ 'webhost.databases.username' | transloco }}</label>
+                              <div class="input-prefix">
+                                <span class="prefix-label">{{ current.HwhUsername }}_</span>
+                                <input [(ngModel)]="dbUsername" placeholder="user" />
+                              </div>
+                            </div>
+                            <div class="form-group">
+                              <label>{{ 'webhost.databases.password' | transloco }}</label>
+                              <input type="password" [(ngModel)]="dbUserPassword" />
+                            </div>
+                          </div>
+                          <div class="form-actions">
+                            <button mat-flat-button color="primary" [disabled]="actionLoading() || !dbUsername()" (click)="createDatabaseUser(current)">
+                              {{ 'webhost.databases.createUserSubmit' | transloco }}
+                            </button>
+                            <button mat-button (click)="toggleCreateUser()">{{ 'webhost.emails.cancel' | transloco }}</button>
+                          </div>
+                        </div>
+                      }
+
+                      <div class="resource-list">
+                        @for (user of databases()?.users; track user.HduUUID) {
+                          <div class="card resource-item">
+                            <div class="resource-main">
+                              <mat-icon class="resource-icon">person</mat-icon>
+                              <strong>{{ user.HduName }}</strong>
+                            </div>
+                            <div class="resource-actions">
+                              <span class="badge" [class.badge-active]="user.HduStatus === 'active'">{{ user.HduStatus }}</span>
+                              <button mat-icon-button color="warn" (click)="deleteDatabaseUser(current, user)" [title]="'webhost.databases.delete' | transloco">
+                                <mat-icon>delete</mat-icon>
+                              </button>
+                            </div>
+                          </div>
+                        }
+                      </div>
+
+                      <div class="section-header mt-4">
+                        <h4>{{ 'webhost.databases.grants' | transloco }}</h4>
+                        @if ((databases()?.databases?.length ?? 0) > 0 && (databases()?.users?.length ?? 0) > 0) {
+                          <button mat-stroked-button (click)="toggleCreateGrant()">
+                            <mat-icon>add</mat-icon> {{ 'webhost.databases.createGrantBtn' | transloco }}
+                          </button>
+                        }
+                      </div>
+
+                      @if (showCreateGrant()) {
+                        <div class="card inline-form">
+                          <div class="form-row">
+                            <div class="form-group">
+                              <label>{{ 'webhost.databases.selectDb' | transloco }}</label>
+                              <select [(ngModel)]="grantDbUUID">
+                                <option value="">-- {{ 'webhost.databases.selectDb' | transloco }} --</option>
+                                @for (db of databases()?.databases; track db.HwdUUID) {
+                                  <option [value]="db.HwdUUID">{{ db.HwdName }}</option>
+                                }
+                              </select>
+                            </div>
+                            <div class="form-group">
+                              <label>{{ 'webhost.databases.selectUser' | transloco }}</label>
+                              <select [(ngModel)]="grantUserUUID">
+                                <option value="">-- {{ 'webhost.databases.selectUser' | transloco }} --</option>
+                                @for (usr of databases()?.users; track usr.HduUUID) {
+                                  <option [value]="usr.HduUUID">{{ usr.HduName }}</option>
+                                }
+                              </select>
+                            </div>
+                          </div>
+                          <div class="form-actions">
+                            <button mat-flat-button color="primary" [disabled]="actionLoading() || !grantDbUUID() || !grantUserUUID()" (click)="createDatabaseGrant(current)">
+                              {{ 'webhost.databases.createGrantSubmit' | transloco }}
+                            </button>
+                            <button mat-button (click)="toggleCreateGrant()">{{ 'webhost.emails.cancel' | transloco }}</button>
+                          </div>
+                        </div>
+                      }
+
+                      @if ((databases()?.grants?.length ?? 0) === 0) {
+                        <p class="card">{{ 'webhost.databases.grantsEmpty' | transloco }}</p>
+                      } @else {
+                        <div class="resource-list">
+                          @for (grant of databases()?.grants; track grant.HdgUUID) {
+                            <div class="card resource-item">
+                              <div class="resource-main">
+                                <mat-icon class="resource-icon">lock_open</mat-icon>
+                                <div>
+                                  <strong>{{ grant.DatabaseName }} &larr; {{ grant.UserName }}</strong>
+                                  <small>Privileges: ALL</small>
+                                </div>
+                              </div>
+                              <div class="resource-actions">
+                                <span class="badge" [class.badge-active]="grant.HdgStatus === 'active'">{{ grant.HdgStatus }}</span>
+                                <button mat-icon-button color="warn" (click)="deleteDatabaseGrant(current, grant)" [title]="'webhost.databases.delete' | transloco">
+                                  <mat-icon>delete</mat-icon>
+                                </button>
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
                   </div>
                 </mat-tab>
               }
@@ -271,6 +482,54 @@ type DnsResponse = {
               @if (current.CanDns) {
                 <mat-tab [label]="'webhost.tab.dns' | transloco">
                   <div class="tab-content">
+                    <div class="tab-actions-bar">
+                      <button mat-flat-button color="primary" (click)="toggleCreateDns()">
+                        <mat-icon>add</mat-icon> {{ 'webhost.dns.createBtn' | transloco }}
+                      </button>
+                    </div>
+
+                    @if (showCreateDns()) {
+                      <div class="card inline-form">
+                        <div class="form-row">
+                          <div class="form-group">
+                            <label>{{ 'webhost.dns.name' | transloco }}</label>
+                            <input [(ngModel)]="dnsName" placeholder="sub.dominio.com." />
+                          </div>
+                          <div class="form-group">
+                            <label>{{ 'webhost.dns.type' | transloco }}</label>
+                            <select [(ngModel)]="dnsType">
+                              <option value="A">A</option>
+                              <option value="AAAA">AAAA</option>
+                              <option value="CNAME">CNAME</option>
+                              <option value="MX">MX</option>
+                              <option value="TXT">TXT</option>
+                              <option value="SRV">SRV</option>
+                            </select>
+                          </div>
+                          <div class="form-group">
+                            <label>{{ 'webhost.dns.value' | transloco }}</label>
+                            <input [(ngModel)]="dnsValue" placeholder="192.0.2.1" />
+                          </div>
+                          <div class="form-group">
+                            <label>{{ 'webhost.dns.ttl' | transloco }}</label>
+                            <input type="number" [(ngModel)]="dnsTtl" placeholder="3600" />
+                          </div>
+                          @if (dnsType() === 'MX' || dnsType() === 'SRV') {
+                            <div class="form-group">
+                              <label>{{ 'webhost.dns.priority' | transloco }}</label>
+                              <input type="number" [(ngModel)]="dnsPriority" placeholder="10" />
+                            </div>
+                          }
+                        </div>
+                        <div class="form-actions">
+                          <button mat-flat-button color="primary" [disabled]="actionLoading() || !dnsName() || !dnsValue()" (click)="createDnsRecord(current)">
+                            {{ 'webhost.dns.createSubmit' | transloco }}
+                          </button>
+                          <button mat-button (click)="toggleCreateDns()">{{ 'webhost.emails.cancel' | transloco }}</button>
+                        </div>
+                      </div>
+                    }
+
                     @if (loadingSub()) {
                       <p role="status">{{ 'webhost.loading' | transloco }}</p>
                     } @else if (dnsRecords().length === 0) {
@@ -286,7 +545,14 @@ type DnsResponse = {
                                 <small>{{ rec.HwzValue }} (TTL: {{ rec.HwzTtl }})</small>
                               </div>
                             </div>
-                            <span class="badge" [class.badge-active]="rec.HwzStatus === 'active'">{{ rec.HwzStatus }}</span>
+                            <div class="resource-actions">
+                              <span class="badge" [class.badge-active]="rec.HwzStatus === 'active'">{{ rec.HwzStatus }}</span>
+                              @if (!rec.HwzManaged) {
+                                <button mat-icon-button color="warn" (click)="deleteDnsRecord(current, rec)" [title]="'webhost.dns.delete' | transloco">
+                                  <mat-icon>delete</mat-icon>
+                                </button>
+                              }
+                            </div>
                           </div>
                         }
                       </div>
@@ -318,6 +584,14 @@ type DnsResponse = {
     .page-header { margin-bottom: 24px; }
     .page-header h1 { margin: 0 0 4px 0; font-size: 1.75rem; }
     .page-header p { margin: 0; color: var(--mat-sys-on-surface-variant, #666); }
+    .action-banner {
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+    .action-banner.success { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+    .action-banner.error { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
     .hosts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
     .host-card {
       padding: 16px;
@@ -356,6 +630,75 @@ type DnsResponse = {
     .badge.badge-active { background: #e8f5e9; color: #2e7d32; }
     .host-details { margin-top: 16px; }
     .tab-content { padding: 24px 0; }
+    .tab-actions-bar { margin-bottom: 16px; }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .section-header h4 { margin: 0; font-size: 1.1rem; }
+    .inline-form {
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid var(--mat-sys-primary, #1976d2);
+      border-radius: 8px;
+      background: var(--mat-sys-surface-container-low, #fafafa);
+    }
+    .edit-subcard {
+      margin-top: 8px;
+      border-color: var(--mat-sys-secondary, #455a64);
+    }
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      min-width: 180px;
+    }
+    .form-group label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--mat-sys-on-surface-variant, #666);
+    }
+    .form-group input, .form-group select {
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: 1px solid var(--mat-sys-outline, #ccc);
+      font-size: 0.95rem;
+      background: #fff;
+    }
+    .input-suffix, .input-prefix {
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--mat-sys-outline, #ccc);
+      border-radius: 4px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .input-suffix input, .input-prefix input {
+      border: none;
+      flex: 1;
+      outline: none;
+    }
+    .suffix-label, .prefix-label {
+      padding: 0 10px;
+      background: var(--mat-sys-surface-container, #eee);
+      color: var(--mat-sys-on-surface-variant, #666);
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+    .form-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
     .specs-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -382,6 +725,7 @@ type DnsResponse = {
       border: 1px solid var(--mat-sys-outline-variant, #eee);
     }
     .resource-main { display: flex; align-items: center; gap: 12px; }
+    .resource-actions { display: flex; align-items: center; gap: 8px; }
     .resource-icon { color: var(--mat-sys-primary, #1976d2); }
     .resource-main div { display: flex; flex-direction: column; }
     .resource-main small { color: var(--mat-sys-on-surface-variant, #666); }
@@ -422,6 +766,39 @@ export class WebhostPageComponent {
   readonly loadingSub = signal(false);
   readonly error = signal(false);
 
+  // Action status banner
+  readonly actionLoading = signal(false);
+  readonly actionStatus = signal<'success' | 'error' | null>(null);
+  readonly actionMessage = signal<string>('');
+
+  // Email form state
+  readonly showCreateEmail = signal(false);
+  readonly emailLocalPart = signal('');
+  readonly emailQuotaMb = signal<number | null>(500);
+  readonly emailPassword = signal('');
+  readonly editingQuotaEmailUUID = signal<string | null>(null);
+  readonly editQuotaValue = signal<number>(500);
+  readonly resettingPasswordEmailUUID = signal<string | null>(null);
+  readonly resetPasswordValue = signal('');
+
+  // Database form state
+  readonly showCreateDb = signal(false);
+  readonly dbName = signal('');
+  readonly showCreateUser = signal(false);
+  readonly dbUsername = signal('');
+  readonly dbUserPassword = signal('');
+  readonly showCreateGrant = signal(false);
+  readonly grantDbUUID = signal('');
+  readonly grantUserUUID = signal('');
+
+  // DNS form state
+  readonly showCreateDns = signal(false);
+  readonly dnsName = signal('');
+  readonly dnsType = signal('A');
+  readonly dnsValue = signal('');
+  readonly dnsTtl = signal<number>(3600);
+  readonly dnsPriority = signal<number | null>(null);
+
   constructor() {
     void this.loadHosts();
   }
@@ -434,7 +811,7 @@ export class WebhostPageComponent {
       const items = response.data?.items ?? [];
       this.hosts.set(items);
       if (items.length > 0) {
-        this.selectHost(items[0]);
+        await this.selectHost(items[0]);
       }
     } catch {
       this.error.set(true);
@@ -443,9 +820,9 @@ export class WebhostPageComponent {
     }
   }
 
-  selectHost(host: WebhostHost): void {
+  selectHost(host: WebhostHost): Promise<void> {
     this.selectedHost.set(host);
-    void this.loadHostDetails(host);
+    return this.loadHostDetails(host);
   }
 
   async loadHostDetails(host: WebhostHost): Promise<void> {
@@ -481,6 +858,318 @@ export class WebhostPageComponent {
       // Sub-resource failure does not fail the whole page
     } finally {
       this.loadingSub.set(false);
+    }
+  }
+
+  // --- Emails Actions ---
+  toggleCreateEmail(): void {
+    this.showCreateEmail.set(!this.showCreateEmail());
+  }
+
+  async createEmail(host: WebhostHost): Promise<void> {
+    const localPart = this.emailLocalPart().trim();
+    if (!localPart) return;
+
+    this.actionLoading.set(true);
+    this.actionStatus.set(null);
+    try {
+      await this.api.post(
+        `customer-portal/webhost/hosts/${encodeURIComponent(host.HwhUUID)}/emails`,
+        {
+          localPart,
+          quotaMb: this.emailQuotaMb() ?? undefined,
+          password: this.emailPassword().trim() || undefined,
+        },
+      );
+      this.actionStatus.set('success');
+      this.actionMessage.set('Conta de e-mail criada com sucesso.');
+      this.showCreateEmail.set(false);
+      this.emailLocalPart.set('');
+      this.emailPassword.set('');
+      await this.loadHostDetails(host);
+    } catch (err) {
+      this.actionStatus.set('error');
+      this.actionMessage.set(err instanceof Error ? err.message : 'Falha ao criar conta de e-mail.');
+    } finally {
+      this.actionLoading.set(false);
+    }
+  }
+
+  openQuotaModal(mail: WebhostEmail): void {
+    this.editingQuotaEmailUUID.set(mail.HweUUID);
+    this.editQuotaValue.set(mail.HweQuotaMb ?? 500);
+  }
+
+  cancelEditQuota(): void {
+    this.editingQuotaEmailUUID.set(null);
+  }
+
+  async saveEmailQuota(host: WebhostHost, emailUUID: string): Promise<void> {
+    this.actionLoading.set(true);
+    this.actionStatus.set(null);
+    try {
+      await this.api.put(
+        `customer-portal/webhost/hosts/${encodeURIComponent(host.HwhUUID)}/emails/${encodeURIComponent(emailUUID)}/quota`,
+        { quotaMb: this.editQuotaValue() },
+      );
+      this.actionStatus.set('success');
+      this.actionMessage.set('Cota de e-mail atualizada.');
+      this.editingQuotaEmailUUID.set(null);
+      await this.loadHostDetails(host);
+    } catch (err) {
+      this.actionStatus.set('error');
+      this.actionMessage.set(err instanceof Error ? err.message : 'Falha ao atualizar cota.');
+    } finally {
+      this.actionLoading.set(false);
+    }
+  }
+
+  openPasswordModal(mail: WebhostEmail): void {
+    this.resettingPasswordEmailUUID.set(mail.HweUUID);
+    this.resetPasswordValue.set('');
+  }
+
+  cancelResetPassword(): void {
+    this.resettingPasswordEmailUUID.set(null);
+  }
+
+  async saveEmailPassword(host: WebhostHost, emailUUID: string): Promise<void> {
+    const pwd = this.resetPasswordValue().trim();
+    if (!pwd) return;
+
+    this.actionLoading.set(true);
+    this.actionStatus.set(null);
+    try {
+      await this.api.put(
+        `customer-portal/webhost/hosts/${encodeURIComponent(host.HwhUUID)}/emails/${encodeURIComponent(emailUUID)}/password`,
+        { password: pwd },
+      );
+      this.actionStatus.set('success');
+      this.actionMessage.set('Senha de e-mail redefinida com sucesso.');
+      this.resettingPasswordEmailUUID.set(null);
+    } catch (err) {
+      this.actionStatus.set('error');
+      this.actionMessage.set(err instanceof Error ? err.message : 'Falha ao redefinir senha.');
+    } finally {
+      this.actionLoading.set(false);
+    }
+  }
+
+  async deleteEmail(host: WebhostHost, mail: WebhostEmail): Promise<void> {
+    this.actionLoading.set(true);
+    this.actionStatus.set(null);
+    try {
+      await this.api.delete(
+        `customer-portal/webhost/hosts/${encodeURIComponent(host.HwhUUID)}/emails/${encodeURIComponent(mail.HweUUID)}`,
+      );
+      this.actionStatus.set('success');
+      this.actionMessage.set('Conta de e-mail removida.');
+      await this.loadHostDetails(host);
+    } catch (err) {
+      this.actionStatus.set('error');
+      this.actionMessage.set(err instanceof Error ? err.message : 'Falha ao remover e-mail.');
+    } finally {
+      this.actionLoading.set(false);
+    }
+  }
+
+  // --- Database Actions ---
+  toggleCreateDb(): void {
+    this.showCreateDb.set(!this.showCreateDb());
+  }
+
+  async createDatabase(host: WebhostHost): Promise<void> {
+    const name = this.dbName().trim();
+    if (!name) return;
+
+    this.actionLoading.set(true);
+    this.actionStatus.set(null);
+    try {
+      await this.api.post(
+        `customer-portal/webhost/hosts/${encodeURIComponent(host.HwhUUID)}/databases`,
+        { name },
+      );
+      this.actionStatus.set('success');
+      this.actionMessage.set('Banco de dados criado com sucesso.');
+      this.showCreateDb.set(false);
+      this.dbName.set('');
+      await this.loadHostDetails(host);
+    } catch (err) {
+      this.actionStatus.set('error');
+      this.actionMessage.set(err instanceof Error ? err.message : 'Falha ao criar banco de dados.');
+    } finally {
+      this.actionLoading.set(false);
+    }
+  }
+
+  async deleteDatabase(host: WebhostHost, db: WebhostDatabase): Promise<void> {
+    this.actionLoading.set(true);
+    this.actionStatus.set(null);
+    try {
+      await this.api.delete(
+        `customer-portal/webhost/hosts/${encodeURIComponent(host.HwhUUID)}/databases/${encodeURIComponent(db.HwdUUID)}`,
+      );
+      this.actionStatus.set('success');
+      this.actionMessage.set('Banco de dados removido.');
+      await this.loadHostDetails(host);
+    } catch (err) {
+      this.actionStatus.set('error');
+      this.actionMessage.set(err instanceof Error ? err.message : 'Falha ao remover banco de dados.');
+    } finally {
+      this.actionLoading.set(false);
+    }
+  }
+
+  toggleCreateUser(): void {
+    this.showCreateUser.set(!this.showCreateUser());
+  }
+
+  async createDatabaseUser(host: WebhostHost): Promise<void> {
+    const username = this.dbUsername().trim();
+    if (!username) return;
+
+    this.actionLoading.set(true);
+    this.actionStatus.set(null);
+    try {
+      await this.api.post(
+        `customer-portal/webhost/hosts/${encodeURIComponent(host.HwhUUID)}/databases/users`,
+        {
+          username,
+          password: this.dbUserPassword().trim() || undefined,
+        },
+      );
+      this.actionStatus.set('success');
+      this.actionMessage.set('Usuário de banco de dados criado.');
+      this.showCreateUser.set(false);
+      this.dbUsername.set('');
+      this.dbUserPassword.set('');
+      await this.loadHostDetails(host);
+    } catch (err) {
+      this.actionStatus.set('error');
+      this.actionMessage.set(err instanceof Error ? err.message : 'Falha ao criar usuário.');
+    } finally {
+      this.actionLoading.set(false);
+    }
+  }
+
+  async deleteDatabaseUser(host: WebhostHost, user: WebhostDatabaseUser): Promise<void> {
+    this.actionLoading.set(true);
+    this.actionStatus.set(null);
+    try {
+      await this.api.delete(
+        `customer-portal/webhost/hosts/${encodeURIComponent(host.HwhUUID)}/databases/users/${encodeURIComponent(user.HduUUID)}`,
+      );
+      this.actionStatus.set('success');
+      this.actionMessage.set('Usuário de banco de dados removido.');
+      await this.loadHostDetails(host);
+    } catch (err) {
+      this.actionStatus.set('error');
+      this.actionMessage.set(err instanceof Error ? err.message : 'Falha ao remover usuário.');
+    } finally {
+      this.actionLoading.set(false);
+    }
+  }
+
+  toggleCreateGrant(): void {
+    this.showCreateGrant.set(!this.showCreateGrant());
+  }
+
+  async createDatabaseGrant(host: WebhostHost): Promise<void> {
+    const databaseUUID = this.grantDbUUID();
+    const userUUID = this.grantUserUUID();
+    if (!databaseUUID || !userUUID) return;
+
+    this.actionLoading.set(true);
+    this.actionStatus.set(null);
+    try {
+      await this.api.post(
+        `customer-portal/webhost/hosts/${encodeURIComponent(host.HwhUUID)}/databases/grants`,
+        { databaseUUID, userUUID },
+      );
+      this.actionStatus.set('success');
+      this.actionMessage.set('Acesso concedido com sucesso.');
+      this.showCreateGrant.set(false);
+      this.grantDbUUID.set('');
+      this.grantUserUUID.set('');
+      await this.loadHostDetails(host);
+    } catch (err) {
+      this.actionStatus.set('error');
+      this.actionMessage.set(err instanceof Error ? err.message : 'Falha ao conceder acesso ao banco.');
+    } finally {
+      this.actionLoading.set(false);
+    }
+  }
+
+  async deleteDatabaseGrant(host: WebhostHost, grant: WebhostDatabaseGrant): Promise<void> {
+    this.actionLoading.set(true);
+    this.actionStatus.set(null);
+    try {
+      await this.api.delete(
+        `customer-portal/webhost/hosts/${encodeURIComponent(host.HwhUUID)}/databases/grants/${encodeURIComponent(grant.HdgUUID)}`,
+      );
+      this.actionStatus.set('success');
+      this.actionMessage.set('Acesso ao banco revogado.');
+      await this.loadHostDetails(host);
+    } catch (err) {
+      this.actionStatus.set('error');
+      this.actionMessage.set(err instanceof Error ? err.message : 'Falha ao revogar acesso ao banco.');
+    } finally {
+      this.actionLoading.set(false);
+    }
+  }
+
+  // --- DNS Actions ---
+  toggleCreateDns(): void {
+    this.showCreateDns.set(!this.showCreateDns());
+  }
+
+  async createDnsRecord(host: WebhostHost): Promise<void> {
+    const name = this.dnsName().trim();
+    const value = this.dnsValue().trim();
+    if (!name || !value) return;
+
+    this.actionLoading.set(true);
+    this.actionStatus.set(null);
+    try {
+      await this.api.post(
+        `customer-portal/webhost/hosts/${encodeURIComponent(host.HwhUUID)}/dns`,
+        {
+          name,
+          type: this.dnsType(),
+          value,
+          ttl: this.dnsTtl() || 3600,
+          priority: this.dnsPriority() ?? undefined,
+        },
+      );
+      this.actionStatus.set('success');
+      this.actionMessage.set('Registro DNS criado com sucesso.');
+      this.showCreateDns.set(false);
+      this.dnsName.set('');
+      this.dnsValue.set('');
+      await this.loadHostDetails(host);
+    } catch (err) {
+      this.actionStatus.set('error');
+      this.actionMessage.set(err instanceof Error ? err.message : 'Falha ao criar registro DNS.');
+    } finally {
+      this.actionLoading.set(false);
+    }
+  }
+
+  async deleteDnsRecord(host: WebhostHost, rec: WebhostDnsRecord): Promise<void> {
+    this.actionLoading.set(true);
+    this.actionStatus.set(null);
+    try {
+      await this.api.delete(
+        `customer-portal/webhost/hosts/${encodeURIComponent(host.HwhUUID)}/dns/${encodeURIComponent(rec.HwzUUID)}`,
+      );
+      this.actionStatus.set('success');
+      this.actionMessage.set('Registro DNS removido.');
+      await this.loadHostDetails(host);
+    } catch (err) {
+      this.actionStatus.set('error');
+      this.actionMessage.set(err instanceof Error ? err.message : 'Falha ao remover registro DNS.');
+    } finally {
+      this.actionLoading.set(false);
     }
   }
 }
