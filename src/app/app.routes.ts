@@ -67,6 +67,10 @@ export const routes: Routes = [
         path: 'webhost',
         loadComponent: () => import('./pages/webhost/webhost-page.component').then((m) => m.WebhostPageComponent),
       },
+      {
+        path: 'voip',
+        loadComponent: () => import('./pages/voip/voip-page.component').then((m) => m.VoipPageComponent),
+      },
       { path: 'financial', component: FinancialPageComponent },
       { path: 'services', component: ServicesPageComponent },
       { path: 'support', component: SupportPageComponent },
