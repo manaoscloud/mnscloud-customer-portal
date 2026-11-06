@@ -7,8 +7,16 @@ import { LoginPageComponent } from './login-page.component';
 
 describe('LoginPageComponent required fields', () => {
   let signIn: ReturnType<typeof vi.fn>;
+  const originalLanguage = navigator.language;
+
+  afterEach(() => {
+    Object.defineProperty(navigator, 'language', { value: originalLanguage || 'en-US', configurable: true });
+    localStorage.clear();
+  });
 
   beforeEach(() => {
+    Object.defineProperty(navigator, 'language', { value: 'en-US', configurable: true });
+    localStorage.clear();
     signIn = vi.fn().mockResolvedValue(undefined);
     TestBed.configureTestingModule({
       imports: [

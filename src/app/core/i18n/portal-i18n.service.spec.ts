@@ -5,11 +5,18 @@ import es from '../../../../public/i18n/es-ES.json';
 import pt from '../../../../public/i18n/pt-BR.json';
 import { PortalI18nService, detectPortalLanguage, resolveInitialLanguage } from './portal-i18n.service';
 
+const originalLanguage = navigator.language;
+
 function setBrowserLanguage(value: string) {
   Object.defineProperty(navigator, 'language', { value, configurable: true });
 }
 
 describe('PortalI18nService', () => {
+  afterEach(() => {
+    setBrowserLanguage(originalLanguage || 'en-US');
+    localStorage.clear();
+  });
+
   beforeEach(() => {
     localStorage.clear();
     TestBed.resetTestingModule();
