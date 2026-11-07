@@ -29,3 +29,10 @@ describe('offerText', () => {
     expect(offerText(offer({}), 'pt-BR').name).toBe('vps-start');
   });
 });
+
+describe('cancel confirmations', () => {
+  it('exist only for the options the customer can use now', async () => {
+    const { CANCEL_CONFIRM } = await import('./services-page.component');
+    expect(Object.keys(CANCEL_CONFIRM).sort()).toEqual(['end_of_cycle', 'unpaid', 'withdrawal']);
+  });
+});
