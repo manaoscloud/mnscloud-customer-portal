@@ -28,6 +28,21 @@ export type PortalOrder = {
   cancelMode?: string | null;
   cancelAt?: string | null;
   refundStatus?: string | null;
+  /** S6 P3: plan change from the next cycle (available, scheduled or none). */
+  planChangeOption?: string | null;
+  planChangeStatus?: string | null;
+  planChangeAt?: string | null;
+  planChangeOfferTexts?: Partial<Record<PortalLanguage, OfferText>> | null;
+  planChangePrice?: number | null;
+};
+
+/** A plan an order can move to (GET /customer-portal/orders/:uuid/plan-options). */
+export type PortalPlanOption = {
+  slug: string;
+  texts: Partial<Record<PortalLanguage, OfferText>>;
+  price: number;
+  currency: string;
+  cycle: string;
 };
 
 /** Translation keys of the confirmation shown before cancelling, per cancel option. */
@@ -60,6 +75,16 @@ export function offerText(offer: PortalOffer, language: PortalLanguage): OfferTe
     offer.texts['en-US'] ??
     offer.texts['es-ES'] ?? { name: offer.slug }
   );
+}
+
+/** Name in the portal language from offer texts (pt-BR, English, Spanish), or the fallback. */
+export function textsName(
+  texts: Partial<Record<PortalLanguage, OfferText>> | null | undefined,
+  language: PortalLanguage,
+  fallback: string,
+): string {
+  const value = texts?.[language] ?? texts?.['pt-BR'] ?? texts?.['en-US'] ?? texts?.['es-ES'];
+  return value?.name || fallback;
 }
 
 /** Orders still open for the same offer: contracting again would duplicate them. */
@@ -112,7 +137,65 @@ const OPEN_STATUSES = new Set(['awaiting_approval', 'awaiting_payment', 'paid', 
               @if (order.refundStatus === 'refunded') {
                 <p>{{ 'services.refunded' | transloco }}</p>
               }
+              @if (order.planChangeOption === 'scheduled' && order.planChangeAt) {
+                <p>
+                  {{ 'services.planChangeScheduled' | transloco: { name: planChangeName(order) } }}
+                  {{ order.planChangeAt | date: 'shortDate' }}
+                  @if (order.planChangePrice !== null && order.planChangePrice !== undefined) {
+                    · {{ order.planChangePrice | currency: order.currency }}
+                  }
+                </p>
+              }
+              @if (order.planChangeStatus === 'applying' || order.planChangeStatus === 'failed') {
+                <p>{{ 'services.planChangeApplying' | transloco }}</p>
+              }
               <p class="muted">#{{ order.id }} · {{ order.dateCreated | date: 'short' }}</p>
+              @if (canOrder() && order.planChangeOption === 'available') {
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="busy() === order.orderUUID"
+                  (click)="openPlans(order)"
+                >
+                  {{ 'services.changePlan' | transloco }}
+                </button>
+              }
+              @if (canOrder() && order.planChangeOption === 'scheduled') {
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="busy() === order.orderUUID"
+                  (click)="dropPlan(order)"
+                >
+                  {{ 'services.dropPlanChange' | transloco }}
+                </button>
+              }
+              @if (planFor() === order.orderUUID) {
+                <div class="plan-options">
+                  @for (option of planOptions(); track option.slug) {
+                    <div class="plan-option">
+                      <span>
+                        {{ optionName(option) }} ·
+                        {{ option.price | currency: option.currency }}
+                        {{ 'services.cycle.' + option.cycle | transloco }}
+                      </span>
+                      <button
+                        mat-flat-button
+                        type="button"
+                        [disabled]="busy() === order.orderUUID"
+                        (click)="choosePlan(order, option)"
+                      >
+                        {{ 'services.choosePlan' | transloco }}
+                      </button>
+                    </div>
+                  } @empty {
+                    <p class="muted">{{ 'services.noPlanOptions' | transloco }}</p>
+                  }
+                  <button mat-button type="button" (click)="planFor.set(null)">
+                    {{ 'services.closePlans' | transloco }}
+                  </button>
+                </div>
+              }
               @if (canOrder() && order.cancelOption && cancelLabel(order)) {
                 <button
                   mat-stroked-button
@@ -211,6 +294,18 @@ const OPEN_STATUSES = new Set(['awaiting_approval', 'awaiting_payment', 'paid', 
       margin: 0 0 8px;
       padding-left: 18px;
     }
+    .plan-options {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .plan-option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
   `,
 })
 export class ServicesPageComponent implements OnInit {
@@ -222,6 +317,9 @@ export class ServicesPageComponent implements OnInit {
   readonly canOrder = signal<boolean>(false);
   /** Slug of the offer being contracted (one request at a time). */
   readonly busy = signal<string | null>(null);
+  /** Order whose plan options are open, and those options. */
+  readonly planFor = signal<string | null>(null);
+  readonly planOptions = signal<PortalPlanOption[]>([]);
 
   async ngOnInit(): Promise<void> {
     await Promise.all([this.loadOrders(), this.loadOffers()]);
@@ -299,6 +397,65 @@ export class ServicesPageComponent implements OnInit {
       await this.loadOrders();
     } catch {
       this.snackBar.open(this.i18n.t('services.cancelFailed'), this.i18n.t('common.ok'), {
+        duration: 8000,
+      });
+    } finally {
+      this.busy.set(null);
+    }
+  }
+
+  planChangeName(order: PortalOrder): string {
+    return textsName(order.planChangeOfferTexts, this.i18n.language(), '');
+  }
+
+  optionName(option: PortalPlanOption): string {
+    return textsName(option.texts, this.i18n.language(), option.slug);
+  }
+
+  async openPlans(order: PortalOrder): Promise<void> {
+    this.busy.set(order.orderUUID);
+    try {
+      const response = await this.api.get<ApiEnvelope<{ items: PortalPlanOption[] }>>(
+        `customer-portal/orders/${encodeURIComponent(order.orderUUID)}/plan-options`,
+      );
+      this.planOptions.set(response.data.items ?? []);
+      this.planFor.set(order.orderUUID);
+    } catch {
+      this.snackBar.open(this.i18n.t('services.planChangeFailed'), this.i18n.t('common.ok'), {
+        duration: 8000,
+      });
+    } finally {
+      this.busy.set(null);
+    }
+  }
+
+  async choosePlan(order: PortalOrder, option: PortalPlanOption): Promise<void> {
+    const name = this.optionName(option);
+    if (!window.confirm(this.i18n.t('services.changePlanConfirm', { name }))) return;
+    await this.sendPlanChange(order, option.slug, 'services.planChangeDone');
+  }
+
+  async dropPlan(order: PortalOrder): Promise<void> {
+    if (!window.confirm(this.i18n.t('services.dropPlanChangeConfirm'))) return;
+    await this.sendPlanChange(order, null, 'services.planChangeDropped');
+  }
+
+  private async sendPlanChange(
+    order: PortalOrder,
+    offer: string | null,
+    doneKey: string,
+  ): Promise<void> {
+    this.busy.set(order.orderUUID);
+    try {
+      await this.api.post<ApiEnvelope<PortalOrder>>(
+        `customer-portal/orders/${encodeURIComponent(order.orderUUID)}/plan-change`,
+        { offer },
+      );
+      this.planFor.set(null);
+      this.snackBar.open(this.i18n.t(doneKey), this.i18n.t('common.ok'), { duration: 8000 });
+      await this.loadOrders();
+    } catch {
+      this.snackBar.open(this.i18n.t('services.planChangeFailed'), this.i18n.t('common.ok'), {
         duration: 8000,
       });
     } finally {

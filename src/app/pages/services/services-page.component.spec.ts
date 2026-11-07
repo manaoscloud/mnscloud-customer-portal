@@ -36,3 +36,15 @@ describe('cancel confirmations', () => {
     expect(Object.keys(CANCEL_CONFIRM).sort()).toEqual(['end_of_cycle', 'unpaid', 'withdrawal']);
   });
 });
+
+describe('plan change names', () => {
+  it('use the portal language, then pt-BR, English, Spanish and the fallback', async () => {
+    const { textsName } = await import('./services-page.component');
+    expect(textsName({ 'en-US': { name: 'Big' }, 'pt-BR': { name: 'Grande' } }, 'en-US', 'x')).toBe(
+      'Big',
+    );
+    expect(textsName({ 'pt-BR': { name: 'Grande' } }, 'es-ES', 'x')).toBe('Grande');
+    expect(textsName(null, 'pt-BR', 'vps-2')).toBe('vps-2');
+    expect(textsName({ 'pt-BR': { name: '' } }, 'pt-BR', 'vps-2')).toBe('vps-2');
+  });
+});
