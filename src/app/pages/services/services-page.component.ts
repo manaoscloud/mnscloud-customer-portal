@@ -23,6 +23,18 @@ export type PortalOrder = {
   chargeStatus: string | null;
   expiresAt: string | null;
   dateCreated: string | null;
+  /** S6: what cancelling now would do (unpaid, withdrawal, end_of_cycle, scheduled or none). */
+  cancelOption?: string | null;
+  cancelMode?: string | null;
+  cancelAt?: string | null;
+  refundStatus?: string | null;
+};
+
+/** Translation keys of the confirmation shown before cancelling, per cancel option. */
+export const CANCEL_CONFIRM: Record<string, string> = {
+  unpaid: 'services.cancelConfirmUnpaid',
+  withdrawal: 'services.cancelConfirmWithdrawal',
+  end_of_cycle: 'services.cancelConfirmEndOfCycle',
 };
 
 type OfferText = { name: string; summary?: string; features?: string[] };
@@ -88,7 +100,29 @@ const OPEN_STATUSES = new Set(['awaiting_approval', 'awaiting_payment', 'paid', 
               @if (order.trialDays > 0) {
                 <p>{{ order.trialDays }} {{ 'services.trialDays' | transloco }}</p>
               }
+              @if (order.cancelOption === 'scheduled' && order.cancelAt) {
+                <p>
+                  {{ 'services.cancelScheduled' | transloco }}
+                  {{ order.cancelAt | date: 'shortDate' }}
+                </p>
+              }
+              @if (order.refundStatus === 'pending') {
+                <p>{{ 'services.refundPending' | transloco }}</p>
+              }
+              @if (order.refundStatus === 'refunded') {
+                <p>{{ 'services.refunded' | transloco }}</p>
+              }
               <p class="muted">#{{ order.id }} · {{ order.dateCreated | date: 'short' }}</p>
+              @if (canOrder() && order.cancelOption && cancelLabel(order)) {
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="busy() === order.orderUUID"
+                  (click)="cancel(order)"
+                >
+                  {{ cancelLabel(order) | transloco }}
+                </button>
+              }
             </article>
           }
         </div>
@@ -223,6 +257,48 @@ export class ServicesPageComponent implements OnInit {
       await this.loadOrders();
     } catch {
       this.snackBar.open(this.i18n.t('services.orderFailed'), this.i18n.t('common.ok'), {
+        duration: 8000,
+      });
+    } finally {
+      this.busy.set(null);
+    }
+  }
+
+  /** Button label of the cancel option, or null when the order cannot be cancelled now. */
+  cancelLabel(order: PortalOrder): string | null {
+    switch (order.cancelOption) {
+      case 'unpaid':
+        return 'services.cancelOrder';
+      case 'withdrawal':
+        return 'services.withdraw';
+      case 'end_of_cycle':
+        return 'services.cancelService';
+      default:
+        return null;
+    }
+  }
+
+  async cancel(order: PortalOrder): Promise<void> {
+    const confirmKey = CANCEL_CONFIRM[order.cancelOption ?? ''];
+    if (!confirmKey) return;
+    if (!window.confirm(this.i18n.t(confirmKey, { name: order.offerName ?? '' }))) return;
+    this.busy.set(order.orderUUID);
+    try {
+      const response = await this.api.post<ApiEnvelope<PortalOrder>>(
+        `customer-portal/orders/${encodeURIComponent(order.orderUUID)}/cancel`,
+        {},
+      );
+      const done = response.data;
+      const key =
+        done.cancelMode === 'withdrawal'
+          ? 'services.withdrawn'
+          : done.cancelMode === 'end_of_cycle' && done.status !== 'cancelled'
+            ? 'services.cancelScheduledDone'
+            : 'services.cancelledDone';
+      this.snackBar.open(this.i18n.t(key), this.i18n.t('common.ok'), { duration: 8000 });
+      await this.loadOrders();
+    } catch {
+      this.snackBar.open(this.i18n.t('services.cancelFailed'), this.i18n.t('common.ok'), {
         duration: 8000,
       });
     } finally {
