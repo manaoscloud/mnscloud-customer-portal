@@ -11,6 +11,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../core/auth/auth.service';
+import { filterMenu, PortalNavigationService } from '../core/navigation/portal-navigation.service';
 import { LanguagePickerComponent } from '../core/i18n/language-picker.component';
 import { PortalI18nService } from '../core/i18n/portal-i18n.service';
 import { ThemeService } from '../core/theme/theme.service';
@@ -30,6 +31,10 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
       { path: '/dns', icon: 'shield', label: 'nav.dns' },
       { path: '/logs', icon: 'receipt_long', label: 'nav.logs' },
       { path: '/hr', icon: 'badge', label: 'nav.hr' },
+      { path: '/infragis', icon: 'map', label: 'nav.infragis' },
+      { path: '/authentication', icon: 'router', label: 'nav.authentication' },
+      { path: '/webhost', icon: 'language', label: 'nav.webhost' },
+      { path: '/voip', icon: 'phone_in_talk', label: 'nav.voip' },
       { path: '/security', icon: 'security', label: 'nav.security' },
       { path: '/services', icon: 'dns', label: 'nav.services' },
       { path: '/support', icon: 'support_agent', label: 'nav.support' },
@@ -78,7 +83,7 @@ const ROLES: readonly CustomerPortalRole[] = ['CUSTOMER_OWNER', 'CUSTOMER_ADMIN'
           </span>
         </div>
 
-        @for (section of sections; track section.title) {
+        @for (section of sections(); track section.title) {
           <div class="nav-section">{{ section.title | transloco }}</div>
           <nav class="nav-list" [attr.aria-label]="section.title | transloco">
             @for (item of section.items; track item.path) {
@@ -94,7 +99,12 @@ const ROLES: readonly CustomerPortalRole[] = ['CUSTOMER_OWNER', 'CUSTOMER_ADMIN'
       <mat-sidenav-content class="portal-main">
         <mat-toolbar class="topbar">
           @if (isMobile()) {
-            <button matIconButton type="button" [attr.aria-label]="'nav.open' | transloco" (click)="drawer.toggle()">
+            <button
+              matIconButton
+              type="button"
+              [attr.aria-label]="'nav.open' | transloco"
+              (click)="drawer.toggle()"
+            >
               <mat-icon>menu</mat-icon>
             </button>
           }
@@ -105,14 +115,24 @@ const ROLES: readonly CustomerPortalRole[] = ['CUSTOMER_OWNER', 'CUSTOMER_ADMIN'
           <button
             matIconButton
             type="button"
-            [matTooltip]="(theme.scheme() === 'dark' ? 'topbar.lightMode' : 'topbar.darkMode') | transloco"
-            [attr.aria-label]="(theme.scheme() === 'dark' ? 'topbar.switchToLight' : 'topbar.switchToDark') | transloco"
+            [matTooltip]="
+              (theme.scheme() === 'dark' ? 'topbar.lightMode' : 'topbar.darkMode') | transloco
+            "
+            [attr.aria-label]="
+              (theme.scheme() === 'dark' ? 'topbar.switchToLight' : 'topbar.switchToDark')
+                | transloco
+            "
             (click)="theme.toggle()"
           >
             <mat-icon>{{ theme.scheme() === 'dark' ? 'light_mode' : 'dark_mode' }}</mat-icon>
           </button>
 
-          <button class="user-chip" type="button" [matMenuTriggerFor]="userMenu" [attr.aria-label]="'topbar.accountMenu' | transloco">
+          <button
+            class="user-chip"
+            type="button"
+            [matMenuTriggerFor]="userMenu"
+            [attr.aria-label]="'topbar.accountMenu' | transloco"
+          >
             <span class="avatar">{{ initials() }}</span>
             <span class="user-chip-text">
               <strong>{{ displayName() }}</strong>
@@ -146,7 +166,13 @@ export class PortalLayoutComponent {
   readonly auth = inject(AuthService);
   readonly theme = inject(ThemeService);
   private readonly i18n = inject(PortalI18nService);
-  readonly sections = NAV_SECTIONS;
+  private readonly navigation = inject(PortalNavigationService);
+  /** Menu filtered by the sections the API reports as unavailable to this portal user. */
+  readonly sections = computed(() => filterMenu(NAV_SECTIONS, this.navigation.hidden()));
+
+  constructor() {
+    void this.navigation.load();
+  }
 
   readonly isMobile = toSignal(
     inject(BreakpointObserver)
@@ -162,7 +188,9 @@ export class PortalLayoutComponent {
   });
 
   readonly initials = computed(() => {
-    const parts = this.displayName().split(/[\s@._-]+/).filter(Boolean);
+    const parts = this.displayName()
+      .split(/[\s@._-]+/)
+      .filter(Boolean);
     return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || 'C';
   });
 

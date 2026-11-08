@@ -22,7 +22,20 @@ export class ApiService {
     return this.request<T>('POST', endpoint, body);
   }
 
-  private async request<T>(method: string, endpoint: string, body?: unknown, binary = false): Promise<T> {
+  async put<T>(endpoint: string, body?: unknown): Promise<T> {
+    return this.request<T>('PUT', endpoint, body);
+  }
+
+  async delete<T>(endpoint: string): Promise<T> {
+    return this.request<T>('DELETE', endpoint);
+  }
+
+  private async request<T>(
+    method: string,
+    endpoint: string,
+    body?: unknown,
+    binary = false,
+  ): Promise<T> {
     const token = localStorage.getItem('mnscloud_customer_portal_jwt');
     const response = await fetch(`${this.runtime.apiBaseUrl}/${endpoint.replace(/^\/+/, '')}`, {
       method,
@@ -33,7 +46,7 @@ export class ApiService {
       body: body === undefined ? undefined : JSON.stringify(body),
     });
 
-    if (response.ok && binary) return await response.blob() as T;
+    if (response.ok && binary) return (await response.blob()) as T;
     const payload = await response.json().catch(() => ({}));
     if (response.status === 401 && token) {
       // The API revoked this session (sign-out elsewhere, customer or user disabled): drop the
@@ -43,7 +56,10 @@ export class ApiService {
       this.sessionRevoked();
     }
     if (!response.ok) {
-      throw new Error(payload?.error ?? payload?.message ?? 'Request failed.');
+      throw Object.assign(
+        new Error(payload?.error ?? payload?.message ?? payload?.detail ?? 'Request failed.'),
+        { status: response.status, code: payload?.code, fields: payload?.fields },
+      );
     }
 
     return payload as T;

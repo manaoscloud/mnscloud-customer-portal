@@ -45,6 +45,15 @@ type SitesResponse = {
   items: DnsSite[];
 };
 
+/** Managed on-premises DNS servers of an account (read only, operated by the platform). */
+export type DnsServer = {
+  DsvUUID: string;
+  DsvName: string;
+  ClusterName: string;
+  ProvisioningState: string;
+  LastSeenAt: string | null;
+};
+
 @Component({
   selector: 'mcp-dns-page',
   standalone: true,
@@ -166,6 +175,39 @@ type SitesResponse = {
               </div>
             }
           </section>
+          @if (servers().length > 0) {
+            <section class="sites-section">
+              <h3>{{ 'dns.managedServers' | transloco }}</h3>
+              <p>{{ 'dns.managedServersDescription' | transloco }}</p>
+              <div class="sites-grid">
+                @for (server of servers(); track server.DsvUUID) {
+                  <article class="card site-card">
+                    <div class="site-header">
+                      <span class="icon-badge">
+                        <mat-icon>dns</mat-icon>
+                      </span>
+                      <div class="site-title">
+                        <h4>{{ server.DsvName }}</h4>
+                        <span class="site-ips">{{ server.ClusterName }}</span>
+                      </div>
+                    </div>
+                    <div class="site-meta">
+                      <p class="meta-item">
+                        <strong>{{ 'dns.serverState' | transloco }}:</strong>
+                        {{ 'dns.serverStates.' + server.ProvisioningState | transloco }}
+                      </p>
+                      @if (server.LastSeenAt) {
+                        <p class="meta-item">
+                          <strong>{{ 'dns.serverLastSeen' | transloco }}:</strong>
+                          {{ server.LastSeenAt | date: 'short' }}
+                        </p>
+                      }
+                    </div>
+                  </article>
+                }
+              </div>
+            </section>
+          }
         }
       }
     </section>
@@ -282,6 +324,7 @@ export class DnsPageComponent {
   readonly accounts = signal<DnsAccount[]>([]);
   readonly selectedAccount = signal<DnsAccount | null>(null);
   readonly sites = signal<DnsSite[]>([]);
+  readonly servers = signal<DnsServer[]>([]);
   readonly loading = signal(false);
   readonly loadingSites = signal(false);
   readonly loadingReport = signal(false);
@@ -313,6 +356,7 @@ export class DnsPageComponent {
   async selectAccount(account: DnsAccount) {
     this.selectedAccount.set(account);
     this.sites.set([]);
+    this.servers.set([]);
     this.activeReportSite.set(null);
     this.reportData.set(null);
     this.loadingSites.set(true);
@@ -325,6 +369,15 @@ export class DnsPageComponent {
       this.error.set(true);
     } finally {
       this.loadingSites.set(false);
+    }
+    try {
+      const servers = await this.api.get<ApiEnvelope<{ items: DnsServer[] }>>(
+        `customer-portal/dns/servers?accountUUID=${account.DacUUID}`
+      );
+      this.servers.set(servers.data?.items ?? []);
+    } catch {
+      // Older APIs without managed servers: the section stays hidden.
+      this.servers.set([]);
     }
   }
 
