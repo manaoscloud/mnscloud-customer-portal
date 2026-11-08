@@ -31,24 +31,34 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardPageComponent },
-      { path: 'ged', loadComponent: () => import('./pages/ged/ged-page.component').then((m) => m.GedPageComponent) },
+      {
+        path: 'ged',
+        loadComponent: () =>
+          import('./pages/ged/ged-page.component').then((m) => m.GedPageComponent),
+      },
       {
         path: 'conversations',
         loadComponent: () =>
-          import('./pages/conversations/conversations-page.component').then((m) => m.ConversationsPageComponent),
+          import('./pages/conversations/conversations-page.component').then(
+            (m) => m.ConversationsPageComponent,
+          ),
       },
       {
         path: 'crm',
-        loadComponent: () => import('./pages/crm/crm-page.component').then((m) => m.CrmPageComponent),
+        loadComponent: () =>
+          import('./pages/crm/crm-page.component').then((m) => m.CrmPageComponent),
       },
       {
         path: 'authentication',
         loadComponent: () =>
-          import('./pages/authentication/authentication-page.component').then((m) => m.AuthenticationPageComponent),
+          import('./pages/authentication/authentication-page.component').then(
+            (m) => m.AuthenticationPageComponent,
+          ),
       },
       {
         path: 'dns',
-        loadComponent: () => import('./pages/dns/dns-page.component').then((m) => m.DnsPageComponent),
+        loadComponent: () =>
+          import('./pages/dns/dns-page.component').then((m) => m.DnsPageComponent),
       },
       {
         path: 'hr',
@@ -60,16 +70,24 @@ export const routes: Routes = [
           import('./pages/infragis/infragis-page.component').then((m) => m.InfraGisPageComponent),
       },
       {
+        path: 'security',
+        loadComponent: () =>
+          import('./pages/security/security-page.component').then((m) => m.SecurityPageComponent),
+      },
+      {
         path: 'logs',
-        loadComponent: () => import('./pages/logs/logs-page.component').then((m) => m.LogsPageComponent),
+        loadComponent: () =>
+          import('./pages/logs/logs-page.component').then((m) => m.LogsPageComponent),
       },
       {
         path: 'webhost',
-        loadComponent: () => import('./pages/webhost/webhost-page.component').then((m) => m.WebhostPageComponent),
+        loadComponent: () =>
+          import('./pages/webhost/webhost-page.component').then((m) => m.WebhostPageComponent),
       },
       {
         path: 'voip',
-        loadComponent: () => import('./pages/voip/voip-page.component').then((m) => m.VoipPageComponent),
+        loadComponent: () =>
+          import('./pages/voip/voip-page.component').then((m) => m.VoipPageComponent),
       },
       { path: 'financial', component: FinancialPageComponent },
       { path: 'services', component: ServicesPageComponent },
