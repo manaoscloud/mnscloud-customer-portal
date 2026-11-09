@@ -835,5 +835,6 @@
   "contracts.status.disputed": "Em disputa",
   "contracts.party.internal": "Interna",
   "contracts.party.counterparty": "Contraparte",
-  "contracts.party.both": "Ambas"
+  "contracts.party.both": "Ambas",
+  "security.reportNarrative": "Mensagem do seu provedor"
 }

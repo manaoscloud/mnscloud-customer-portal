@@ -2,6 +2,7 @@ import {
   acceptanceBounds,
   canAcceptRisk,
   canRequestUnblock,
+  paragraphs,
   reportMonths,
   stateKey,
   type Finding,
@@ -45,5 +46,10 @@ describe('Security portal page helpers', () => {
     expect(months[1]).toBe('2025-12');
     expect(months[12]).toBe('2025-01');
     expect(acceptanceBounds(new Date(2026, 10, 8))).toEqual({ min: '2026-11-08', max: '2027-11-08' });
+  });
+
+  it('splits the published report text into paragraphs', () => {
+    expect(paragraphs('First line\ncontinues.\n\n  Second.  \n\n\n')).toEqual(['First line\ncontinues.', 'Second.']);
+    expect(paragraphs(null)).toEqual([]);
   });
 });

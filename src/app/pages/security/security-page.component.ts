@@ -115,6 +115,8 @@ export type VulnerabilityReport = {
   serversDetail: ReportRow[];
   topOpen: ReportRow[];
   acceptedItems: ReportRow[];
+  /** Text the provider reviewed and published for the month (V5); null when none. */
+  narrative?: string | null;
 };
 export type SecurityTab = 'dashboard' | 'servers' | 'threats' | 'vulnerabilities' | 'report' | 'secrets';
 
@@ -131,6 +133,11 @@ const PERIOD_METRICS = ['opened', 'openedP0', 'fixed', 'fixedOnTime', 'fixedLate
 const CURRENT_METRICS = ['open', 'p0', 'p1', 'p2', 'p3', 'overdue', 'kev', 'acceptedRisks'];
 
 /** The last 13 months (YYYY-MM), newest first, as the report accepts them. */
+/** Paragraphs of the report text published by the provider (blank lines split them). */
+export function paragraphs(text: string | null | undefined): string[] {
+  return (text ?? '').split(/\n\s*\n|\r\n\s*\r\n/).map((part) => part.trim()).filter(Boolean);
+}
+
 export function reportMonths(now = new Date()): string[] {
   return Array.from({ length: 13 }, (_, back) => {
     const date = new Date(now.getFullYear(), now.getMonth() - back, 1);
@@ -560,6 +567,14 @@ export function canRequestUnblock(account: SecurityAccount | null, block: Block)
                 <article class="report">
                   <h2>{{ 'security.reportTitle' | transloco }} · {{ data.accountName }} · {{ data.month }}</h2>
                   <p class="hint">{{ 'security.reportServers' | transloco }}: {{ data.servers }} · {{ 'security.reportAssessed' | transloco }}: {{ data.assessedServers }} · {{ 'security.reportGenerated' | transloco }} {{ when(data.generatedAt) }}</p>
+                  @if (data.narrative) {
+                    <h2>{{ 'security.reportNarrative' | transloco }}</h2>
+                    <div class="card narrative">
+                      @for (paragraph of paragraphs(data.narrative); track $index) {
+                        <p>{{ paragraph }}</p>
+                      }
+                    </div>
+                  }
                   <h2>{{ 'security.reportPeriod' | transloco }}</h2>
                   <div class="metrics">
                     @for (metric of periodMetrics; track metric) {
@@ -757,6 +772,8 @@ export function canRequestUnblock(account: SecurityAccount | null, block: Block)
     td.wrap { white-space: normal; min-width: 220px; overflow-wrap: anywhere; }
     .badge { display: inline-block; margin: 2px 4px 2px 0; padding: 2px 8px; border-radius: 999px; font-size: 0.8rem; background: var(--surface-container, rgba(0, 0, 0, 0.05)); }
     .hint { display: block; margin-top: 2px; font-size: 0.85rem; color: var(--text-secondary, #666); }
+    .narrative { padding: 12px 16px; line-height: 1.5; }
+    .narrative p { margin: 0 0 8px; overflow-wrap: anywhere; }
     .request-form { display: flex; flex-direction: column; gap: 8px; padding: 8px 0; white-space: normal; }
     .request-form mat-form-field { width: min(100%, 560px); }
     .secret-value { font-family: monospace; overflow-wrap: anywhere; white-space: normal; }
@@ -826,6 +843,8 @@ export class SecurityPageComponent {
   private base(): string {
     return `customer-portal/cyber-security/accounts/${encodeURIComponent(this.account()!.CyaUUID)}`;
   }
+
+  readonly paragraphs = paragraphs;
 
   when(value: string | null): string {
     if (!value) return '—';

@@ -835,5 +835,6 @@
   "contracts.status.disputed": "Disputed",
   "contracts.party.internal": "Internal",
   "contracts.party.counterparty": "Counterparty",
-  "contracts.party.both": "Both"
+  "contracts.party.both": "Both",
+  "security.reportNarrative": "Message from your provider"
 }
