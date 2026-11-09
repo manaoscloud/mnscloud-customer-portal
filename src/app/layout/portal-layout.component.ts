@@ -24,6 +24,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
     title: 'nav.section.overview',
     items: [
       { path: '/dashboard', icon: 'space_dashboard', label: 'nav.dashboard' },
+      { path: '/contracts', icon: 'history_edu', label: 'nav.contracts' },
       { path: '/financial', icon: 'receipt_long', label: 'nav.financial' },
       { path: '/ged', icon: 'folder_copy', label: 'nav.ged' },
       { path: '/conversations', icon: 'forum', label: 'nav.conversations' },

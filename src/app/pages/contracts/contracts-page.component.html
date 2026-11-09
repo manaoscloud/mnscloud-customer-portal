@@ -1,0 +1,373 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>{{ 'contracts.title' | transloco }}</h1>
+      <p>{{ 'contracts.description' | transloco }}</p>
+    </div>
+  </header>
+
+  @if (error()) {
+    <p class="card banner warning" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ error() | transloco }}</span>
+    </p>
+  }
+
+  @if (successMessage()) {
+    <p class="card banner" role="status">
+      <mat-icon>check_circle</mat-icon>
+      <span>{{ successMessage() | transloco }}</span>
+    </p>
+  }
+
+  <!-- Pending Signatures Banner -->
+  @if (signPending().length > 0) {
+    <aside class="banner warning" aria-label="Assinaturas Pendentes">
+      <div class="banner-content">
+        <mat-icon>draw</mat-icon>
+        <div>
+          <strong>{{ 'contracts.signPending.banner' | transloco }}</strong>
+          <div>
+            @for (item of signPending(); track item.CtsUUID) {
+              <div style="margin-top: 4px">
+                <span>{{ item.CtdTitle }} ({{ item.CteTitle }}) - {{ item.CtsRole }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+      <div class="banner-actions">
+        @for (item of signPending(); track item.CtsUUID) {
+          <button mat-flat-button color="primary" type="button" (click)="openSignModal(item)">
+            <mat-icon>edit_document</mat-icon>
+            {{ 'contracts.signPending.signBtn' | transloco }}
+          </button>
+        }
+      </div>
+    </aside>
+  }
+
+  <!-- Navigation Tabs -->
+  <nav class="tabs-header" aria-label="Seções de Contratos">
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'myContracts'"
+      (click)="selectTab('myContracts')"
+    >
+      {{ 'contracts.tab.myContracts' | transloco }}
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'envelopes'"
+      (click)="selectTab('envelopes')"
+    >
+      {{ 'contracts.tab.envelopes' | transloco }}
+    </button>
+    @if (accounts().length > 0) {
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab() === 'reseller'"
+        (click)="selectTab('reseller')"
+      >
+        {{ 'contracts.tab.reseller' | transloco }}
+      </button>
+    }
+  </nav>
+
+  @if (loading()) {
+    <p role="status">{{ 'contracts.loading' | transloco }}</p>
+  } @else {
+    <!-- Tab 1: Meus Contratos -->
+    @if (activeTab() === 'myContracts') {
+      <div class="toolbar">
+        <input
+          type="search"
+          class="search-input"
+          [placeholder]="'contracts.search' | transloco"
+          [(ngModel)]="searchDocs"
+          (keyup.enter)="loadDocuments(0)"
+        />
+        <button mat-stroked-button type="button" (click)="loadDocuments(0)">
+          <mat-icon>search</mat-icon>
+          {{ 'contracts.filter' | transloco }}
+        </button>
+      </div>
+
+      @if (documents().length === 0) {
+        <p class="card">{{ 'contracts.empty' | transloco }}</p>
+      } @else {
+        <div class="contracts-grid">
+          @for (doc of documents(); track doc.CtdUUID) {
+            <article class="card contract-card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">{{ doc.CtdTitle }}</h2>
+                  @if (doc.CtdNumber) {
+                    <small>Nº {{ doc.CtdNumber }}</small>
+                  }
+                </div>
+                <span class="badge" [ngClass]="doc.CtdStatus">
+                  {{ 'contracts.status.' + doc.CtdStatus | transloco }}
+                </span>
+              </div>
+
+              <div class="card-meta">
+                <span>{{ 'contracts.category' | transloco }}: {{ doc.CtdKind }}</span>
+                @if (doc.CtdEffectiveDate) {
+                  <span>
+                    {{ 'contracts.effectiveDate' | transloco }}:
+                    {{ doc.CtdEffectiveDate | date: 'dd/MM/yyyy' }}
+                  </span>
+                }
+                @if (doc.CtdExpirationDate) {
+                  <span>
+                    {{ 'contracts.expirationDate' | transloco }}:
+                    {{ doc.CtdExpirationDate | date: 'dd/MM/yyyy' }}
+                  </span>
+                }
+              </div>
+            </article>
+          }
+        </div>
+
+        <nav class="pagination" [attr.aria-label]="'contracts.pagination' | transloco">
+          <button
+            mat-button
+            type="button"
+            [disabled]="documentsOffset() === 0"
+            (click)="loadDocuments(documentsOffset() - 20)"
+          >
+            {{ 'contracts.previous' | transloco }}
+          </button>
+          <button
+            mat-button
+            type="button"
+            [disabled]="documentsOffset() + 20 >= documentsTotal()"
+            (click)="loadDocuments(documentsOffset() + 20)"
+          >
+            {{ 'contracts.next' | transloco }}
+          </button>
+        </nav>
+      }
+    }
+
+    <!-- Tab 2: Envelopes de Assinatura -->
+    @if (activeTab() === 'envelopes') {
+      <div class="toolbar">
+        <input
+          type="search"
+          class="search-input"
+          [placeholder]="'contracts.search' | transloco"
+          [(ngModel)]="searchEnvelopes"
+          (keyup.enter)="loadEnvelopes(0)"
+        />
+        <select
+          class="status-select"
+          [(ngModel)]="envelopeStatusFilter"
+          (change)="loadEnvelopes(0)"
+          [attr.aria-label]="'contracts.status' | transloco"
+        >
+          <option value="">{{ 'contracts.all' | transloco }}</option>
+          <option value="draft">{{ 'contracts.status.draft' | transloco }}</option>
+          <option value="sent">{{ 'contracts.status.sent' | transloco }}</option>
+          <option value="partially_signed">
+            {{ 'contracts.status.partially_signed' | transloco }}
+          </option>
+          <option value="completed">{{ 'contracts.status.completed' | transloco }}</option>
+          <option value="declined">{{ 'contracts.status.declined' | transloco }}</option>
+          <option value="voided">{{ 'contracts.status.voided' | transloco }}</option>
+        </select>
+        <button mat-stroked-button type="button" (click)="loadEnvelopes(0)">
+          <mat-icon>search</mat-icon>
+          {{ 'contracts.filter' | transloco }}
+        </button>
+      </div>
+
+      @if (envelopes().length === 0) {
+        <p class="card">{{ 'contracts.empty' | transloco }}</p>
+      } @else {
+        <div class="contracts-grid">
+          @for (env of envelopes(); track env.CteUUID) {
+            <article class="card contract-card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">{{ env.CteTitle }}</h2>
+                  <small>{{ 'contracts.provider' | transloco }}: {{ env.CteProvider }}</small>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center">
+                  <span class="badge" [ngClass]="env.CteStatus">
+                    {{ 'contracts.status.' + env.CteStatus | transloco }}
+                  </span>
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    (click)="downloadEnvelope(env)"
+                    [disabled]="downloading() === env.CteUUID"
+                  >
+                    <mat-icon>download</mat-icon>
+                    {{ 'contracts.download' | transloco }}
+                  </button>
+                </div>
+              </div>
+
+              @if (env.Signers && env.Signers.length > 0) {
+                <div class="signers-list">
+                  <strong>{{ 'contracts.signers' | transloco }}:</strong>
+                  @for (signer of env.Signers; track signer.CtsUUID) {
+                    <div class="signer-row">
+                      <span>{{ signer.CtsName }} ({{ signer.CtsRole }})</span>
+                      <span class="badge" [ngClass]="signer.CtsStatus">
+                        {{ 'contracts.status.' + signer.CtsStatus | transloco }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              }
+            </article>
+          }
+        </div>
+
+        <nav class="pagination" [attr.aria-label]="'contracts.pagination' | transloco">
+          <button
+            mat-button
+            type="button"
+            [disabled]="envelopesOffset() === 0"
+            (click)="loadEnvelopes(envelopesOffset() - 20)"
+          >
+            {{ 'contracts.previous' | transloco }}
+          </button>
+          <button
+            mat-button
+            type="button"
+            [disabled]="envelopesOffset() + 20 >= envelopesTotal()"
+            (click)="loadEnvelopes(envelopesOffset() + 20)"
+          >
+            {{ 'contracts.next' | transloco }}
+          </button>
+        </nav>
+      }
+    }
+
+    <!-- Tab 3: Gestão de Revenda (Templates & Obrigações) -->
+    @if (activeTab() === 'reseller' && selectedAccount()) {
+      <div style="display: flex; flex-direction: column; gap: 24px">
+        @if (accounts().length > 1) {
+          <div>
+            <label>
+              <strong>{{ 'contracts.account' | transloco }}:</strong>
+              <select
+                class="status-select"
+                [ngModel]="selectedAccount()?.CtaUUID"
+                (ngModelChange)="selectAccount($event)"
+              >
+                @for (act of accounts(); track act.CtaUUID) {
+                  <option [value]="act.CtaUUID">{{ act.CtaName }} ({{ act.CtaLegalName }})</option>
+                }
+              </select>
+            </label>
+          </div>
+        }
+
+        <!-- Modelos de Contrato -->
+        <section>
+          <h2>{{ 'contracts.templates' | transloco }}</h2>
+          @if (templates().length === 0) {
+            <p class="card">{{ 'contracts.templates.empty' | transloco }}</p>
+          } @else {
+            <div class="contracts-grid">
+              @for (tpl of templates(); track tpl.CtmUUID) {
+                <article class="card contract-card">
+                  <div class="card-header">
+                    <div>
+                      <h3 class="card-title">{{ tpl.CtmName }}</h3>
+                      @if (tpl.CtmDescription) {
+                        <p style="margin: 4px 0 0 0">{{ tpl.CtmDescription }}</p>
+                      }
+                    </div>
+                    <span class="badge" [ngClass]="tpl.CtmStatus">
+                      {{ 'contracts.status.' + tpl.CtmStatus | transloco }}
+                    </span>
+                  </div>
+                  <div class="card-meta">
+                    <span>{{ 'contracts.category' | transloco }}: {{ tpl.CtmCategory }}</span>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        </section>
+
+        <!-- Obrigações Contratuais -->
+        <section>
+          <h2>{{ 'contracts.obligations' | transloco }}</h2>
+          @if (obligations().length === 0) {
+            <p class="card">{{ 'contracts.obligations.empty' | transloco }}</p>
+          } @else {
+            <div class="contracts-grid">
+              @for (obl of obligations(); track obl.CtbUUID) {
+                <article class="card contract-card">
+                  <div class="card-header">
+                    <h3 class="card-title">{{ obl.CtbTitle }}</h3>
+                    <span class="badge" [ngClass]="obl.CtbStatus">
+                      {{ 'contracts.status.' + obl.CtbStatus | transloco }}
+                    </span>
+                  </div>
+                  <div class="card-meta">
+                    <span>{{ 'contracts.category' | transloco }}: {{ obl.CtbKind }}</span>
+                    <span>
+                      {{ 'contracts.party' | transloco }}:
+                      {{ 'contracts.party.' + obl.CtbParty | transloco }}
+                    </span>
+                    @if (obl.CtbDueDate) {
+                      <span>
+                        {{ 'contracts.dueDate' | transloco }}:
+                        {{ obl.CtbDueDate | date: 'dd/MM/yyyy' }}
+                      </span>
+                    }
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        </section>
+      </div>
+    }
+  }
+
+  <!-- Sign Confirmation Modal -->
+  @if (selectedPendingToSign()) {
+    <div class="modal-backdrop" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <h2>{{ 'contracts.signPending.confirmTitle' | transloco }}</h2>
+        <p>
+          <strong>{{ selectedPendingToSign()?.CtdTitle }}</strong>
+          ({{ selectedPendingToSign()?.CteTitle }})
+        </p>
+        <p class="card banner">
+          {{ 'contracts.signPending.confirmNotice' | transloco }}
+        </p>
+        <div class="modal-actions">
+          <button mat-button type="button" (click)="closeSignModal()" [disabled]="signing()">
+            {{ 'contracts.cancel' | transloco }}
+          </button>
+          <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            (click)="confirmSign()"
+            [disabled]="signing()"
+          >
+            @if (signing()) {
+              <span>{{ 'contracts.signPending.signing' | transloco }}</span>
+            } @else {
+              <span>{{ 'contracts.signPending.confirmBtn' | transloco }}</span>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</section>
