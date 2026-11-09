@@ -21,6 +21,8 @@ export type SecurityAccount = {
   Unblock: number;
   Secrets: number;
   SecretReveal: number;
+  Vulnerabilities?: number;
+  VulnAccept?: number;
 };
 type Dashboard = Record<string, number>;
 type Server = {
@@ -74,14 +76,80 @@ type Secret = {
   stored: number;
   expiresAt: string | null;
 };
-export type SecurityTab = 'dashboard' | 'servers' | 'threats' | 'secrets';
+type Remediation = {
+  action?: string;
+  command?: string | null;
+  restart?: string;
+  advisory?: string | null;
+  advisoryUrl?: string | null;
+  links?: { kind: string; url: string }[];
+};
+export type Finding = {
+  findingUUID: string;
+  code: string;
+  summary: string | null;
+  cvssScore: number | null;
+  kev: boolean;
+  priority: string;
+  status: string;
+  serverName: string | null;
+  package: string;
+  installedVersion: string;
+  fixedVersion: string | null;
+  dueAt: string | null;
+  overdue: boolean;
+  riskAcceptedUntil: string | null;
+  riskReason: string | null;
+  riskAcceptedVia: string | null;
+  remediation?: Remediation;
+};
+type ReportRow = Record<string, string | number | null>;
+export type VulnerabilityReport = {
+  month: string;
+  generatedAt: string;
+  accountName: string;
+  servers: number;
+  assessedServers: number;
+  period: Record<string, number | null>;
+  current: Record<string, number | null>;
+  serversDetail: ReportRow[];
+  topOpen: ReportRow[];
+  acceptedItems: ReportRow[];
+};
+export type SecurityTab = 'dashboard' | 'servers' | 'threats' | 'vulnerabilities' | 'report' | 'secrets';
 
 const TABS: readonly [SecurityTab, keyof SecurityAccount, string][] = [
   ['dashboard', 'Dashboard', 'space_dashboard'],
   ['servers', 'Servers', 'dns'],
   ['threats', 'Threats', 'gpp_maybe'],
+  ['vulnerabilities', 'Vulnerabilities', 'bug_report'],
+  ['report', 'Vulnerabilities', 'summarize'],
   ['secrets', 'Secrets', 'key'],
 ];
+const FINDING_STATUSES = ['open', 'accepted_risk', 'fixed', 'all'] as const;
+const PERIOD_METRICS = ['opened', 'openedP0', 'fixed', 'fixedOnTime', 'fixedLate', 'accepted', 'riskExpired'];
+const CURRENT_METRICS = ['open', 'p0', 'p1', 'p2', 'p3', 'overdue', 'kev', 'acceptedRisks'];
+
+/** The last 13 months (YYYY-MM), newest first, as the report accepts them. */
+export function reportMonths(now = new Date()): string[] {
+  return Array.from({ length: 13 }, (_, back) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - back, 1);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  });
+}
+
+/** Latest valid day of a risk acceptance (one year ahead) and the earliest (today), as YYYY-MM-DD. */
+export function acceptanceBounds(now = new Date()): { min: string; max: string } {
+  const day = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const max = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 365);
+  return { min: day(now), max: day(max) };
+}
+
+/** Whether the customer may accept the risk of this finding now. */
+export function canAcceptRisk(account: SecurityAccount | null, finding: Finding): boolean {
+  return Number(account?.VulnAccept) === 1 && finding.status === 'open';
+}
 const PAGE = 50;
 const METRICS = [
   'servers', 'protectedServers', 'attentionServers', 'openAlerts', 'alerts24h',
@@ -93,6 +161,8 @@ const KNOWN = {
   alert: ['open', 'acknowledged', 'resolved', 'ignored'],
   level: ['info', 'warning', 'error', 'critical'],
   request: ['pending', 'approved', 'rejected'],
+  priority: ['P0', 'P1', 'P2', 'P3', 'info'],
+  finding: ['open', 'accepted_risk', 'fixed', 'false_positive'],
   secret: ['generic', 'runtime_env', 'api_token', 'password', 'certificate', 'ssh_key', 'database'],
 } as const;
 /** A revealed value disappears from the screen after this many milliseconds. */
@@ -359,6 +429,247 @@ export function canRequestUnblock(account: SecurityAccount | null, block: Block)
                 </div>
               }
             }
+            @case ('vulnerabilities') {
+              <div class="toolbar">
+                <mat-form-field>
+                  <mat-label>{{ 'security.findingStatus' | transloco }}</mat-label>
+                  <mat-select [value]="findingStatus()" (valueChange)="findingStatus.set($event); loadFindings(0)">
+                    @for (status of findingStatuses; track status) {
+                      <mat-option [value]="status">{{ (status === 'all' ? 'security.all' : stateKey('finding', status)) | transloco }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </div>
+              <p class="hint">{{ 'security.vulnerabilitiesHint' | transloco }}</p>
+              @if (findings().length === 0) {
+                <p class="card">{{ 'security.emptyFindings' | transloco }}</p>
+              } @else {
+                <div class="table-wrap card">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th scope="col">{{ 'security.priority' | transloco }}</th>
+                        <th scope="col">{{ 'security.vulnerability' | transloco }}</th>
+                        <th scope="col">{{ 'security.server' | transloco }}</th>
+                        <th scope="col">{{ 'security.package' | transloco }}</th>
+                        <th scope="col">{{ 'security.due' | transloco }}</th>
+                        <th scope="col">{{ 'security.findingStatus' | transloco }}</th>
+                        <th scope="col"><span class="visually-hidden">{{ 'security.actions' | transloco }}</span></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (item of findings(); track item.findingUUID) {
+                        <tr>
+                          <td><span class="badge" [class.urgent]="item.priority === 'P0'">{{ stateKey('priority', item.priority) | transloco }}</span></td>
+                          <td class="wrap">
+                            {{ item.code }}
+                            @if (item.kev) { <span class="badge urgent">KEV</span> }
+                            @if (item.summary) { <span class="hint">{{ item.summary }}</span> }
+                          </td>
+                          <td>{{ item.serverName ?? '—' }}</td>
+                          <td>
+                            {{ item.package }}
+                            <span class="hint">{{ item.installedVersion }} → {{ item.fixedVersion ?? ('security.noFix' | transloco) }}</span>
+                          </td>
+                          <td>
+                            {{ when(item.dueAt) }}
+                            @if (item.overdue) { <span class="badge urgent">{{ 'security.overdue' | transloco }}</span> }
+                          </td>
+                          <td>
+                            <span class="badge">{{ stateKey('finding', item.status) | transloco }}</span>
+                            @if (item.status === 'accepted_risk') {
+                              <span class="hint">{{ 'security.acceptedUntil' | transloco }} {{ when(item.riskAcceptedUntil) }}</span>
+                            }
+                          </td>
+                          <td>
+                            <button matButton type="button" (click)="toggleFix(item)">{{ 'security.howToFix' | transloco }}</button>
+                            @if (canAcceptRisk(account(), item)) {
+                              <button matButton type="button" (click)="startAccept(item)">{{ 'security.acceptRisk' | transloco }}</button>
+                            }
+                          </td>
+                        </tr>
+                        @if (fixing() === item.findingUUID) {
+                          <tr>
+                            <td colspan="7" class="wrap detail">
+                              @if (item.remediation?.action === 'update' && item.remediation?.command) {
+                                <strong>{{ 'security.updateCommand' | transloco }}</strong>
+                                <code class="command">{{ item.remediation!.command }}</code>
+                                <button matButton type="button" (click)="copy(item.remediation!.command!)">{{ 'security.copy' | transloco }}</button>
+                              } @else {
+                                <strong>{{ 'security.mitigate' | transloco }}</strong>
+                                <p>{{ 'security.mitigateSteps' | transloco }}</p>
+                              }
+                              <p>{{ 'security.restart.' + (item.remediation?.restart ?? 'service') | transloco }}</p>
+                              @if (item.remediation?.advisory) {
+                                <p>{{ 'security.advisory' | transloco }}: {{ item.remediation!.advisory }}</p>
+                              }
+                              @if (item.riskReason) {
+                                <p>{{ 'security.acceptReason' | transloco }}: {{ item.riskReason }}</p>
+                              }
+                            </td>
+                          </tr>
+                        }
+                        @if (accepting() === item.findingUUID) {
+                          <tr>
+                            <td colspan="7">
+                              <form class="request-form" (ngSubmit)="sendAccept(item)">
+                                <p class="hint">{{ 'security.acceptHint' | transloco }}</p>
+                                <mat-form-field>
+                                  <mat-label>{{ 'security.acceptUntil' | transloco }}</mat-label>
+                                  <input matInput type="date" name="acceptUntil" required [min]="bounds.min" [max]="bounds.max" [(ngModel)]="acceptUntil" />
+                                </mat-form-field>
+                                <mat-form-field>
+                                  <mat-label>{{ 'security.acceptReason' | transloco }}</mat-label>
+                                  <textarea matInput name="acceptReason" rows="3" minlength="5" maxlength="500" required [(ngModel)]="acceptReason"></textarea>
+                                </mat-form-field>
+                                <div class="actions">
+                                  <button matButton type="button" (click)="accepting.set(null)">{{ 'security.cancel' | transloco }}</button>
+                                  <button matButton="filled" type="submit">{{ 'security.acceptRisk' | transloco }}</button>
+                                </div>
+                              </form>
+                            </td>
+                          </tr>
+                        }
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                <nav class="pagination" [attr.aria-label]="'security.pagination' | transloco">
+                  <button matButton type="button" [disabled]="findingOffset() === 0" (click)="loadFindings(findingOffset() - page)">
+                    {{ 'security.previous' | transloco }}
+                  </button>
+                  <button matButton type="button" [disabled]="findingOffset() + page >= findingTotal()" (click)="loadFindings(findingOffset() + page)">
+                    {{ 'security.next' | transloco }}
+                  </button>
+                </nav>
+              }
+            }
+            @case ('report') {
+              <div class="toolbar no-print">
+                <mat-form-field>
+                  <mat-label>{{ 'security.reportMonth' | transloco }}</mat-label>
+                  <mat-select [value]="reportMonth()" (valueChange)="reportMonth.set($event); loadReport()">
+                    @for (month of months; track month) {
+                      <mat-option [value]="month">{{ month }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <button matButton type="button" (click)="print()"><mat-icon>print</mat-icon>{{ 'security.print' | transloco }}</button>
+              </div>
+              @if (report(); as data) {
+                <article class="report">
+                  <h2>{{ 'security.reportTitle' | transloco }} · {{ data.accountName }} · {{ data.month }}</h2>
+                  <p class="hint">{{ 'security.reportServers' | transloco }}: {{ data.servers }} · {{ 'security.reportAssessed' | transloco }}: {{ data.assessedServers }} · {{ 'security.reportGenerated' | transloco }} {{ when(data.generatedAt) }}</p>
+                  <h2>{{ 'security.reportPeriod' | transloco }}</h2>
+                  <div class="metrics">
+                    @for (metric of periodMetrics; track metric) {
+                      <article class="card metric">
+                        <span class="metric-value">{{ data.period[metric] ?? 0 }}</span>
+                        <span>{{ 'security.report.' + metric | transloco }}</span>
+                      </article>
+                    }
+                  </div>
+                  <h2>{{ 'security.reportCurrent' | transloco }}</h2>
+                  <div class="metrics">
+                    @for (metric of currentMetrics; track metric) {
+                      <article class="card metric">
+                        <span class="metric-value">{{ data.current[metric] ?? 0 }}</span>
+                        <span>{{ 'security.report.' + metric | transloco }}</span>
+                      </article>
+                    }
+                  </div>
+                  <h2>{{ 'security.reportTopOpen' | transloco }}</h2>
+                  @if (data.topOpen.length === 0) {
+                    <p class="card">{{ 'security.emptyFindings' | transloco }}</p>
+                  } @else {
+                    <div class="table-wrap card">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th scope="col">{{ 'security.priority' | transloco }}</th>
+                            <th scope="col">{{ 'security.vulnerability' | transloco }}</th>
+                            <th scope="col">{{ 'security.server' | transloco }}</th>
+                            <th scope="col">{{ 'security.package' | transloco }}</th>
+                            <th scope="col">{{ 'security.due' | transloco }}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (item of data.topOpen; track $index) {
+                            <tr>
+                              <td>{{ stateKey('priority', '' + item['priority']) | transloco }}</td>
+                              <td>{{ item['code'] }}</td>
+                              <td>{{ item['server'] }}</td>
+                              <td>{{ item['package'] }}</td>
+                              <td>{{ when('' + (item['dueAt'] ?? '')) }}</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  }
+                  <h2>{{ 'security.reportPerServer' | transloco }}</h2>
+                  @if (data.serversDetail.length === 0) {
+                    <p class="card">{{ 'security.emptyFindings' | transloco }}</p>
+                  } @else {
+                    <div class="table-wrap card">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th scope="col">{{ 'security.server' | transloco }}</th>
+                            <th scope="col">{{ 'security.report.open' | transloco }}</th>
+                            <th scope="col">P0</th>
+                            <th scope="col">P1</th>
+                            <th scope="col">{{ 'security.report.overdue' | transloco }}</th>
+                            <th scope="col">{{ 'security.report.acceptedRisks' | transloco }}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (item of data.serversDetail; track $index) {
+                            <tr>
+                              <td>{{ item['server'] }}</td>
+                              <td>{{ item['open'] }}</td>
+                              <td>{{ item['p0'] }}</td>
+                              <td>{{ item['p1'] }}</td>
+                              <td>{{ item['overdue'] }}</td>
+                              <td>{{ item['acceptedRisks'] }}</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  }
+                  <h2>{{ 'security.reportAccepted' | transloco }}</h2>
+                  @if (data.acceptedItems.length === 0) {
+                    <p class="card">{{ 'security.emptyAccepted' | transloco }}</p>
+                  } @else {
+                    <div class="table-wrap card">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th scope="col">{{ 'security.vulnerability' | transloco }}</th>
+                            <th scope="col">{{ 'security.server' | transloco }}</th>
+                            <th scope="col">{{ 'security.acceptUntil' | transloco }}</th>
+                            <th scope="col">{{ 'security.acceptReason' | transloco }}</th>
+                            <th scope="col">{{ 'security.acceptedBy' | transloco }}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (item of data.acceptedItems; track $index) {
+                            <tr>
+                              <td>{{ item['code'] }}</td>
+                              <td>{{ item['server'] }}</td>
+                              <td>{{ when('' + (item['until'] ?? '')) }}</td>
+                              <td class="wrap">{{ item['reason'] }}</td>
+                              <td>{{ (item['via'] === 'portal' ? 'security.acceptedByCustomer' : 'security.acceptedByProvider') | transloco }}</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  }
+                </article>
+              }
+            }
             @case ('secrets') {
               @if (vaults().length === 0) {
                 <p class="card">{{ 'security.emptyVaults' | transloco }}</p>
@@ -449,6 +760,10 @@ export function canRequestUnblock(account: SecurityAccount | null, block: Block)
     .request-form { display: flex; flex-direction: column; gap: 8px; padding: 8px 0; white-space: normal; }
     .request-form mat-form-field { width: min(100%, 560px); }
     .secret-value { font-family: monospace; overflow-wrap: anywhere; white-space: normal; }
+    .badge.urgent { background: var(--error-container, #fde7e9); color: var(--on-error-container, #8c1d18); }
+    .detail p { margin: 4px 0; }
+    .command { display: block; margin: 6px 0; padding: 8px; font-family: monospace; overflow-wrap: anywhere; white-space: pre-wrap; background: var(--surface-container, rgba(0, 0, 0, 0.05)); border-radius: 6px; }
+    @media print { .no-print, .tabs, .account-select { display: none !important; } }
     .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   `],
 })
@@ -460,6 +775,22 @@ export class SecurityPageComponent {
   readonly alertStatuses = KNOWN.alert;
   readonly stateKey = stateKey;
   readonly canRequestUnblock = canRequestUnblock;
+  readonly canAcceptRisk = canAcceptRisk;
+  readonly findingStatuses = FINDING_STATUSES;
+  readonly periodMetrics = PERIOD_METRICS;
+  readonly currentMetrics = CURRENT_METRICS;
+  readonly months = reportMonths();
+  readonly bounds = acceptanceBounds();
+  readonly findings = signal<Finding[]>([]);
+  readonly findingStatus = signal<string>('open');
+  readonly findingOffset = signal(0);
+  readonly findingTotal = signal(0);
+  readonly fixing = signal<string | null>(null);
+  readonly accepting = signal<string | null>(null);
+  readonly report = signal<VulnerabilityReport | null>(null);
+  readonly reportMonth = signal(reportMonths()[0]);
+  acceptUntil = '';
+  acceptReason = '';
   readonly accounts = signal<SecurityAccount[]>([]);
   readonly account = signal<SecurityAccount | null>(null);
   readonly tab = signal<SecurityTab>('dashboard');
@@ -540,6 +871,10 @@ export class SecurityPageComponent {
         this.servers.set((await this.api.get<ApiEnvelope<{ items: Server[] }>>(`${this.base()}/servers`)).data?.items ?? []);
       } else if (tab === 'threats') {
         await Promise.all([this.loadAlerts(0), this.loadBlocks()]);
+      } else if (tab === 'vulnerabilities') {
+        await this.loadFindings(0);
+      } else if (tab === 'report') {
+        await this.loadReport();
       } else {
         const vaults = (await this.api.get<ApiEnvelope<{ items: Vault[] }>>(`${this.base()}/vaults`)).data?.items ?? [];
         this.vaults.set(vaults);
@@ -604,6 +939,68 @@ export class SecurityPageComponent {
       this.error.set('security.actionFailed');
     }
     await this.loadBlocks().catch(() => this.error.set('security.error'));
+  }
+
+  async loadFindings(offset: number) {
+    const query = new URLSearchParams({
+      status: this.findingStatus(),
+      limit: String(PAGE),
+      offset: String(Math.max(0, offset)),
+    });
+    try {
+      const response = await this.api.get<ApiEnvelope<{ items: Finding[]; total: number }>>(`${this.base()}/vulnerabilities?${query}`);
+      this.findings.set(response.data?.items ?? []);
+      this.findingTotal.set(Number(response.data?.total ?? 0));
+      this.findingOffset.set(Math.max(0, offset));
+    } catch {
+      this.error.set('security.error');
+    }
+  }
+
+  toggleFix(finding: Finding) {
+    this.fixing.set(this.fixing() === finding.findingUUID ? null : finding.findingUUID);
+  }
+
+  startAccept(finding: Finding) {
+    this.acceptUntil = '';
+    this.acceptReason = '';
+    this.accepting.set(finding.findingUUID);
+  }
+
+  async sendAccept(finding: Finding) {
+    this.error.set(null);
+    const reason = this.acceptReason.trim();
+    if (!this.acceptUntil || reason.length < 5) {
+      this.error.set('security.acceptInvalid');
+      return;
+    }
+    try {
+      await this.api.post(`${this.base()}/vulnerabilities/${encodeURIComponent(finding.findingUUID)}/risk-acceptance`, {
+        until: this.acceptUntil,
+        reason,
+      });
+      this.accepting.set(null);
+      this.notice.set('security.accepted');
+    } catch {
+      this.error.set('security.acceptFailed');
+    }
+    await this.loadFindings(this.findingOffset());
+  }
+
+  async loadReport() {
+    try {
+      const response = await this.api.get<ApiEnvelope<VulnerabilityReport>>(
+        `${this.base()}/vulnerability-report?month=${encodeURIComponent(this.reportMonth())}`,
+      );
+      this.report.set(response.data ?? null);
+    } catch {
+      this.report.set(null);
+      this.error.set('security.error');
+    }
+  }
+
+  print() {
+    window.print();
   }
 
   async loadSecrets() {
