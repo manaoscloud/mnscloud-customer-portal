@@ -8,6 +8,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ApiService } from '../../services/api.service';
 import type { ApiEnvelope } from '../../models/session.model';
+import { HrRequestsComponent } from './hr-requests.component';
 
 export type HrAccount = {
   HraUUID: string;
@@ -18,6 +19,8 @@ export type HrAccount = {
   Employees: number;
   Schedules: number;
   Timesheets: number;
+  Requests: number;
+  PendingRequests: number;
 };
 type Dashboard = Record<string, number | string>;
 type Employee = {
@@ -50,13 +53,14 @@ type Day = {
   PunchCount: number;
   Flags: string | null;
 };
-export type HrTab = 'dashboard' | 'employees' | 'schedules' | 'timesheets';
+export type HrTab = 'dashboard' | 'employees' | 'schedules' | 'timesheets' | 'requests';
 
 const TABS: readonly [HrTab, keyof HrAccount, string][] = [
   ['dashboard', 'Dashboard', 'space_dashboard'],
   ['employees', 'Employees', 'badge'],
   ['schedules', 'Schedules', 'calendar_view_week'],
   ['timesheets', 'Timesheets', 'event_note'],
+  ['requests', 'Requests', 'pending_actions'],
 ];
 const PAGE = 50;
 const METRICS = ['activeEmployees', 'scheduledToday', 'presentToday', 'workingNow', 'lateNow', 'openIssues30d'];
@@ -83,7 +87,7 @@ export function monthRange(month: string): { from: string; to: string } {
 /** Read-only HR of the accounts the provider published to this customer, by granted operation. */
 @Component({
   selector: 'mcp-hr-page',
-  imports: [FormsModule, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, TranslocoPipe],
+  imports: [FormsModule, HrRequestsComponent, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -127,6 +131,9 @@ export function monthRange(month: string): { from: string; to: string } {
               (click)="openTab(item[0])"
             >
               <mat-icon>{{ item[2] }}</mat-icon>{{ 'hr.tabs.' + item[0] | transloco }}
+              @if (item[0] === 'requests' && account()!.PendingRequests > 0) {
+                <span class="count" [attr.aria-label]="'hr.requests.pendingCount' | transloco: { count: account()!.PendingRequests }">{{ account()!.PendingRequests }}</span>
+              }
             </button>
           }
         </nav>
@@ -236,6 +243,9 @@ export function monthRange(month: string): { from: string; to: string } {
                 }
               </div>
             }
+            @case ('requests') {
+              <mcp-hr-requests [account]="account()!.HraUUID" (changed)="refreshCounts()" />
+            }
             @case ('timesheets') {
               <div class="toolbar">
                 <mat-form-field>
@@ -303,6 +313,7 @@ export function monthRange(month: string): { from: string; to: string } {
     .toolbar mat-form-field { flex: 1 1 200px; min-width: 0; }
     .tabs button.active { background: var(--surface-container, rgba(0, 0, 0, 0.06)); font-weight: 600; }
     .pagination { justify-content: flex-end; }
+    .count { margin-inline-start: 6px; min-width: 20px; padding: 0 6px; border-radius: 999px; font-size: 0.75rem; line-height: 20px; text-align: center; background: var(--primary, #0b57d0); color: var(--on-primary, #fff); }
     .metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
     .metric { display: flex; flex-direction: column; gap: 4px; padding: 16px; }
     .metric-value { font-size: 1.6rem; font-weight: 600; }
@@ -385,6 +396,8 @@ export class HrPageComponent {
         this.dashboard.set((await this.api.get<ApiEnvelope<Dashboard>>(`${this.base()}/dashboard`)).data ?? null);
       } else if (tab === 'employees') {
         await this.loadEmployees(0);
+      } else if (tab === 'requests') {
+        // The requests component loads its own list.
       } else if (tab === 'schedules') {
         this.schedules.set((await this.api.get<ApiEnvelope<{ items: Schedule[] }>>(`${this.base()}/schedules`)).data?.items ?? []);
       } else {
@@ -411,6 +424,19 @@ export class HrPageComponent {
       this.offset.set(Math.max(0, offset));
     } catch {
       this.error.set(true);
+    }
+  }
+
+  /** Pending counter of the selected account after a decision. */
+  async refreshCounts() {
+    try {
+      const response = await this.api.get<ApiEnvelope<{ items: HrAccount[] }>>('customer-portal/hr/accounts');
+      const items = response.data?.items ?? [];
+      this.accounts.set(items);
+      const current = items.find((item) => item.HraUUID === this.account()?.HraUUID);
+      if (current) this.account.set(current);
+    } catch {
+      // The counter keeps its last value.
     }
   }
 
