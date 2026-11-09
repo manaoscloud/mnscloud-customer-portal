@@ -43,7 +43,7 @@ describe('ContractsService', () => {
       data: { items: [{ CtdUUID: 'doc-1' }], total: 1, limit: 10, offset: 5 },
     });
     const res = await service.listDocuments('test', 10, 5);
-    expect(res.items.length).toBe(1);
+    expect(res.items).toHaveLength(1);
     expect(apiGet).toHaveBeenCalledWith(
       expect.stringContaining('customer-portal/contracts/documents?search=test&limit=10&offset=5'),
     );

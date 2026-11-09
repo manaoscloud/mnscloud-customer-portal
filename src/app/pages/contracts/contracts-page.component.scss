@@ -67,9 +67,14 @@
   align-items: center;
 }
 
-.search-input {
+.search-label {
+  display: flex;
   flex: 1;
   min-width: 200px;
+}
+
+.search-input {
+  width: 100%;
   padding: 8px 12px;
   border: 1px solid var(--outline, #777);
   border-radius: 6px;
@@ -85,6 +90,11 @@
   background: var(--surface, white);
   color: inherit;
   font: inherit;
+}
+
+.status-output {
+  display: block;
+  padding: 12px 0;
 }
 
 .contracts-grid {
@@ -174,17 +184,25 @@
   font-size: 0.875rem;
 }
 
-.modal-backdrop {
+.modal-dialog {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  border: none;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 .modal-card {

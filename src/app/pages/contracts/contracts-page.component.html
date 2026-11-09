@@ -14,10 +14,10 @@
   }
 
   @if (successMessage()) {
-    <p class="card banner" role="status">
+    <output class="card banner">
       <mat-icon>check_circle</mat-icon>
       <span>{{ successMessage() | transloco }}</span>
-    </p>
+    </output>
   }
 
   <!-- Pending Signatures Banner -->
@@ -78,18 +78,21 @@
   </nav>
 
   @if (loading()) {
-    <p role="status">{{ 'contracts.loading' | transloco }}</p>
+    <output class="status-output">{{ 'contracts.loading' | transloco }}</output>
   } @else {
     <!-- Tab 1: Meus Contratos -->
     @if (activeTab() === 'myContracts') {
       <div class="toolbar">
-        <input
-          type="search"
-          class="search-input"
-          [placeholder]="'contracts.search' | transloco"
-          [(ngModel)]="searchDocs"
-          (keyup.enter)="loadDocuments(0)"
-        />
+        <label for="search-docs" class="search-label">
+          <input
+            id="search-docs"
+            type="search"
+            class="search-input"
+            [placeholder]="'contracts.search' | transloco"
+            [(ngModel)]="searchDocs"
+            (keyup.enter)="loadDocuments(0)"
+          />
+        </label>
         <button mat-stroked-button type="button" (click)="loadDocuments(0)">
           <mat-icon>search</mat-icon>
           {{ 'contracts.filter' | transloco }}
@@ -157,13 +160,16 @@
     <!-- Tab 2: Envelopes de Assinatura -->
     @if (activeTab() === 'envelopes') {
       <div class="toolbar">
-        <input
-          type="search"
-          class="search-input"
-          [placeholder]="'contracts.search' | transloco"
-          [(ngModel)]="searchEnvelopes"
-          (keyup.enter)="loadEnvelopes(0)"
-        />
+        <label for="search-envelopes" class="search-label">
+          <input
+            id="search-envelopes"
+            type="search"
+            class="search-input"
+            [placeholder]="'contracts.search' | transloco"
+            [(ngModel)]="searchEnvelopes"
+            (keyup.enter)="loadEnvelopes(0)"
+          />
+        </label>
         <select
           class="status-select"
           [(ngModel)]="envelopeStatusFilter"
@@ -339,7 +345,7 @@
 
   <!-- Sign Confirmation Modal -->
   @if (selectedPendingToSign()) {
-    <div class="modal-backdrop" role="dialog" aria-modal="true">
+    <dialog class="modal-dialog" open>
       <div class="modal-card">
         <h2>{{ 'contracts.signPending.confirmTitle' | transloco }}</h2>
         <p>
@@ -368,6 +374,6 @@
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
   }
 </section>

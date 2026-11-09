@@ -210,13 +210,13 @@ describe('ContractsPageComponent', () => {
     await comp.loadAll();
     fixture.detectChanges();
 
-    expect(comp.signPending().length).toBe(1);
+    expect(comp.signPending()).toHaveLength(1);
     expect(comp.signPending()[0].CteTitle).toBe('Service Agreement Envelope');
-    expect(comp.documents().length).toBe(1);
+    expect(comp.documents()).toHaveLength(1);
     expect(comp.documents()[0].CtdTitle).toBe('Master Service Agreement');
-    expect(comp.envelopes().length).toBe(1);
+    expect(comp.envelopes()).toHaveLength(1);
     expect(comp.envelopes()[0].CteStatus).toBe('sent');
-    expect(comp.accounts().length).toBe(1);
+    expect(comp.accounts()).toHaveLength(1);
   });
 
   it('switches tabs and loads reseller templates and obligations', async () => {
@@ -229,9 +229,9 @@ describe('ContractsPageComponent', () => {
     fixture.detectChanges();
 
     expect(comp.activeTab()).toBe('reseller');
-    expect(comp.templates().length).toBe(1);
+    expect(comp.templates()).toHaveLength(1);
     expect(comp.templates()[0].CtmName).toBe('Standard Reseller Template');
-    expect(comp.obligations().length).toBe(1);
+    expect(comp.obligations()).toHaveLength(1);
     expect(comp.obligations()[0].CtbTitle).toBe('Deliver Quarterly Report');
   });
 

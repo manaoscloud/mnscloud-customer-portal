@@ -60,7 +60,7 @@ export class ContractsService {
   }
 
   async downloadEnvelope(envelopeUuid: string): Promise<Blob> {
-    return this.api.getBlob(
+    return await this.api.getBlob(
       `customer-portal/contracts/envelopes/${encodeURIComponent(envelopeUuid)}/download`,
     );
   }
