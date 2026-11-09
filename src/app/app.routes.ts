@@ -32,6 +32,13 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardPageComponent },
       {
+        path: 'contracts',
+        loadComponent: () =>
+          import('./pages/contracts/contracts-page.component').then(
+            (m) => m.ContractsPageComponent,
+          ),
+      },
+      {
         path: 'ged',
         loadComponent: () =>
           import('./pages/ged/ged-page.component').then((m) => m.GedPageComponent),
