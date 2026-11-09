@@ -13,20 +13,30 @@ type PublishedConversation = {
   CnvUUID: string;
   CnvSubject: string | null;
   ChannelName: string;
-  AccountName: string;
+  CvaName?: string;
+  AccountName?: string;
+  AccountUUID?: string;
   CnvState: string;
   LastMessage: string | null;
-  LastMessageAt: string | null;
-  CnvDateUpdated: string;
+  CnvLastMessageAt?: string | null;
+  LastMessageAt?: string | null;
+  CnvDateCreated?: string;
+  CnvDateUpdated?: string;
 };
 
 type ConversationMessage = {
-  CvmUUID: string;
-  CvmAuthorRole: string;
+  CnmUUID?: string;
+  CvmUUID?: string;
+  CnmDirection?: string;
+  CnmAuthorType?: string;
+  CvmAuthorRole?: string;
   AuthorName: string | null;
-  CvmBody: string;
-  CvmKind: string;
-  CvmDateCreated: string;
+  CnmBody?: string;
+  CvmBody?: string;
+  CnmKind?: string;
+  CvmKind?: string;
+  CnmSentAt?: string;
+  CvmDateCreated?: string;
 };
 
 type ConversationPage = {
@@ -114,7 +124,7 @@ type MessageList = {
                 <h2>{{ conv.CnvSubject || conv.ChannelName }}</h2>
                 <p class="meta">
                   <span class="channel-badge">{{ conv.ChannelName }}</span>
-                  @if (conv.AccountName) { <span>· {{ conv.AccountName }}</span> }
+                  @if (conv.CvaName || conv.AccountName) { <span>· {{ conv.CvaName || conv.AccountName }}</span> }
                   <span>· {{ conv.CnvState }}</span>
                 </p>
                 @if (conv.LastMessage) {
@@ -157,13 +167,13 @@ type MessageList = {
             @if (messages().length === 0) {
               <p class="empty-messages">{{ 'conversations.noMessages' | transloco }}</p>
             } @else {
-              @for (msg of messages(); track msg.CvmUUID) {
-                <div class="message-bubble" [class.customer]="msg.CvmAuthorRole === 'contact'" [class.agent]="msg.CvmAuthorRole !== 'contact'">
+              @for (msg of messages(); track msgId(msg)) {
+                <div class="message-bubble" [class.customer]="isCustomerMessage(msg)" [class.agent]="!isCustomerMessage(msg)">
                   <div class="bubble-header">
-                    <span class="author">{{ msg.AuthorName || (msg.CvmAuthorRole === 'contact' ? 'Você' : 'Atendimento') }}</span>
-                    <span class="time">{{ msg.CvmDateCreated | date:'shortTime' }}</span>
+                    <span class="author">{{ msg.AuthorName || (isCustomerMessage(msg) ? 'Você' : 'Atendimento') }}</span>
+                    <span class="time">{{ msgSentAt(msg) | date:'shortTime' }}</span>
                   </div>
-                  <div class="body">{{ msg.CvmBody }}</div>
+                  <div class="body">{{ msgBody(msg) }}</div>
                 </div>
               }
             }
@@ -242,6 +252,27 @@ export class ConversationsPageComponent {
   newSubject = '';
   newMessage = '';
 
+  msgId(msg: ConversationMessage): string {
+    return msg.CnmUUID || msg.CvmUUID || '';
+  }
+
+  isCustomerMessage(msg: ConversationMessage): boolean {
+    const role = msg.CnmAuthorType || msg.CvmAuthorRole;
+    return role === 'contact' || msg.CnmDirection === 'inbound';
+  }
+
+  msgBody(msg: ConversationMessage): string {
+    return msg.CnmBody ?? msg.CvmBody ?? '';
+  }
+
+  msgSentAt(msg: ConversationMessage): string {
+    return msg.CnmSentAt ?? msg.CvmDateCreated ?? '';
+  }
+
+  private normalizeMessages(items: ConversationMessage[] | undefined): ConversationMessage[] {
+    return (items ?? []).slice().sort((a, b) => this.msgSentAt(a).localeCompare(this.msgSentAt(b)));
+  }
+
   toggleNewModal() {
     this.showNewModal.update(v => !v);
     this.createError.set(false);
@@ -255,8 +286,8 @@ export class ConversationsPageComponent {
     this.creating.set(true);
     this.createError.set(false);
     try {
-      const firstAccount = this.conversations()[0] as (PublishedConversation & { AccountUUID?: string }) | undefined;
-      const accountUUID = firstAccount?.AccountUUID;
+      const firstAccount = this.conversations()[0];
+      const accountUUID = firstAccount?.AccountUUID ?? null;
       const res = await this.api.post<ApiEnvelope<{ conversationUUID: string }>>('customer-portal/conversations', {
         accountUUID,
         subject: this.newSubject.trim() || null,
@@ -315,7 +346,7 @@ export class ConversationsPageComponent {
       const response = await this.api.get<ApiEnvelope<MessageList>>(
         `customer-portal/conversations/${encodeURIComponent(conv.CnvUUID)}/messages?limit=50`,
       );
-      this.messages.set(response.data.items || []);
+      this.messages.set(this.normalizeMessages(response.data.items));
     } catch {
       this.messages.set([]);
     } finally {
@@ -343,7 +374,7 @@ export class ConversationsPageComponent {
       const response = await this.api.get<ApiEnvelope<MessageList>>(
         `customer-portal/conversations/${encodeURIComponent(conv.CnvUUID)}/messages?limit=50`,
       );
-      this.messages.set(response.data.items || []);
+      this.messages.set(this.normalizeMessages(response.data.items));
     } catch (err) {
       console.error('Failed to send message:', err);
     } finally {

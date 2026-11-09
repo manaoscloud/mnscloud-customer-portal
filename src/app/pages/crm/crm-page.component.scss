@@ -1,0 +1,91 @@
+:host {
+  display: block;
+}
+label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+input,
+select,
+textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid var(--outline, #777);
+  border-radius: 6px;
+  background: var(--surface, white);
+  color: inherit;
+  font: inherit;
+}
+button {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid var(--outline, #777);
+  border-radius: 8px;
+  background: var(--surface, white);
+  color: inherit;
+  cursor: pointer;
+}
+button[aria-pressed='true'] {
+  font-weight: 700;
+  outline: 2px solid currentColor;
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.workspace-picker {
+  max-width: 40rem;
+  margin: 16px 0;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  margin: 16px 0;
+}
+.records {
+  display: grid;
+  gap: 12px;
+}
+.record {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  overflow-wrap: anywhere;
+}
+h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.wide {
+  grid-column: 1 / -1;
+}
+.lookup-search {
+  display: flex;
+  gap: 6px;
+}
+.error {
+  color: var(--error, #b3261e);
+}
+.attempted :invalid {
+  border: 2px solid var(--error, #b3261e);
+}
+@media (max-width: 600px) {
+  .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .record > div {
+    width: 100%;
+  }
+}

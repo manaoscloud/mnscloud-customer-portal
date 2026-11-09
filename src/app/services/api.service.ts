@@ -3,7 +3,12 @@ import { RuntimeConfigService } from '../core/runtime/runtime-config.service';
 
 /** Refused request: the message of the API plus the HTTP status and code to tell cases apart. */
 export class ApiError extends Error {
-  constructor(message: string, readonly status: number, readonly code?: string) {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: string,
+    readonly fields?: unknown,
+  ) {
     super(message);
     this.name = 'ApiError';
   }
@@ -34,7 +39,16 @@ export class ApiService {
     return this.request<T>('PUT', endpoint, body);
   }
 
-  private async request<T>(method: string, endpoint: string, body?: unknown, binary = false): Promise<T> {
+  async delete<T>(endpoint: string): Promise<T> {
+    return this.request<T>('DELETE', endpoint);
+  }
+
+  private async request<T>(
+    method: string,
+    endpoint: string,
+    body?: unknown,
+    binary = false,
+  ): Promise<T> {
     const token = localStorage.getItem('mnscloud_customer_portal_jwt');
     const response = await fetch(`${this.runtime.apiBaseUrl}/${endpoint.replace(/^\/+/, '')}`, {
       method,
@@ -45,7 +59,7 @@ export class ApiService {
       body: body === undefined ? undefined : JSON.stringify(body),
     });
 
-    if (response.ok && binary) return await response.blob() as T;
+    if (response.ok && binary) return (await response.blob()) as T;
     const payload = await response.json().catch(() => ({}));
     if (response.status === 401 && token) {
       // The API revoked this session (sign-out elsewhere, customer or user disabled): drop the
@@ -55,7 +69,12 @@ export class ApiService {
       this.sessionRevoked();
     }
     if (!response.ok) {
-      throw new ApiError(payload?.error ?? payload?.message ?? 'Request failed.', response.status, payload?.code);
+      throw new ApiError(
+        payload?.error ?? payload?.message ?? payload?.detail ?? 'Request failed.',
+        response.status,
+        payload?.code,
+        payload?.fields,
+      );
     }
 
     return payload as T;
