@@ -87,6 +87,10 @@ export const routes: Routes = [
           import('./pages/logs/logs-page.component').then((m) => m.LogsPageComponent),
       },
       {
+        path: 'vps',
+        loadComponent: () => import('./pages/vps/vps-page.component').then((m) => m.VpsPageComponent),
+      },
+      {
         path: 'webhost',
         loadComponent: () =>
           import('./pages/webhost/webhost-page.component').then((m) => m.WebhostPageComponent),
