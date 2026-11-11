@@ -20,6 +20,7 @@ export type HrAccount = {
   Schedules: number;
   Timesheets: number;
   Requests: number;
+  Kiosks: number;
   PendingRequests: number;
 };
 type Dashboard = Record<string, number | string>;
@@ -53,7 +54,17 @@ type Day = {
   PunchCount: number;
   Flags: string | null;
 };
-export type HrTab = 'dashboard' | 'employees' | 'schedules' | 'timesheets' | 'requests';
+type Kiosk = {
+  KioskUUID: string;
+  Name: string;
+  CompanyName: string | null;
+  Status: string;
+  Online: number;
+  LastUsedAt: string | null;
+  PunchesLastDay: number;
+  RejectionsLastWeek: number;
+};
+export type HrTab = 'dashboard' | 'employees' | 'schedules' | 'timesheets' | 'requests' | 'kiosks';
 
 const TABS: readonly [HrTab, keyof HrAccount, string][] = [
   ['dashboard', 'Dashboard', 'space_dashboard'],
@@ -61,6 +72,7 @@ const TABS: readonly [HrTab, keyof HrAccount, string][] = [
   ['schedules', 'Schedules', 'calendar_view_week'],
   ['timesheets', 'Timesheets', 'event_note'],
   ['requests', 'Requests', 'pending_actions'],
+  ['kiosks', 'Kiosks', 'schedule'],
 ];
 const PAGE = 50;
 const METRICS = ['activeEmployees', 'scheduledToday', 'presentToday', 'workingNow', 'lateNow', 'openIssues30d'];
@@ -82,6 +94,20 @@ export function monthRange(month: string): { from: string; to: string } {
   const [year, mon] = month.split('-').map(Number);
   const last = new Date(Date.UTC(year, mon, 0)).getUTCDate();
   return { from: `${month}-01`, to: `${month}-${String(last).padStart(2, '0')}` };
+}
+
+/** State of a shared time clock: online (request in the last 10 minutes), offline, pending or revoked. */
+export function kioskState(kiosk: { Status: string; Online: number | string }): string {
+  if (kiosk.Status !== 'active') return kiosk.Status === 'pending' ? 'pending' : 'revoked';
+  return Number(kiosk.Online) === 1 ? 'online' : 'offline';
+}
+
+/** Local date and time of an ISO instant, or a dash. */
+export function localDateTime(value: string | null, language: string): string {
+  const date = value ? new Date(value) : null;
+  return date && !Number.isNaN(date.getTime())
+    ? new Intl.DateTimeFormat(language, { dateStyle: 'short', timeStyle: 'short' }).format(date)
+    : '—';
 }
 
 /** Read-only HR of the accounts the provider published to this customer, by granted operation. */
@@ -243,6 +269,39 @@ export function monthRange(month: string): { from: string; to: string } {
                 }
               </div>
             }
+            @case ('kiosks') {
+              @if (kiosks().length === 0) {
+                <p class="card">{{ 'hr.kiosks.empty' | transloco }}</p>
+              } @else {
+                <div class="table-wrap card">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th scope="col">{{ 'hr.kiosks.name' | transloco }}</th>
+                        <th scope="col">{{ 'hr.company' | transloco }}</th>
+                        <th scope="col">{{ 'hr.kiosks.state' | transloco }}</th>
+                        <th scope="col">{{ 'hr.kiosks.lastUse' | transloco }}</th>
+                        <th scope="col">{{ 'hr.kiosks.punchesLastDay' | transloco }}</th>
+                        <th scope="col">{{ 'hr.kiosks.rejectionsLastWeek' | transloco }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (item of kiosks(); track item.KioskUUID) {
+                        <tr>
+                          <td>{{ item.Name }}</td>
+                          <td>{{ item.CompanyName ?? '—' }}</td>
+                          <td><span class="badge" [class.negative]="kioskState(item) === 'offline'">{{ 'hr.kiosks.states.' + kioskState(item) | transloco }}</span></td>
+                          <td>{{ localDateTime(item.LastUsedAt, language) }}</td>
+                          <td>{{ item.PunchesLastDay }}</td>
+                          <td [class.negative]="item.RejectionsLastWeek > 0">{{ item.RejectionsLastWeek }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                <p class="hint">{{ 'hr.kiosks.hint' | transloco }}</p>
+              }
+            }
             @case ('requests') {
               <mcp-hr-requests [account]="account()!.HraUUID" (changed)="refreshCounts()" />
             }
@@ -334,6 +393,9 @@ export class HrPageComponent {
   readonly page = PAGE;
   readonly metrics = METRICS;
   readonly hours = hours;
+  readonly kioskState = kioskState;
+  readonly localDateTime = localDateTime;
+  readonly language = typeof navigator === 'undefined' ? 'pt-BR' : navigator.language;
   readonly accounts = signal<HrAccount[]>([]);
   readonly account = signal<HrAccount | null>(null);
   readonly tab = signal<HrTab>('dashboard');
@@ -349,6 +411,7 @@ export class HrPageComponent {
   readonly employee = signal<string | null>(null);
   readonly month = signal(new Date().toISOString().slice(0, 7));
   readonly days = signal<Day[]>([]);
+  readonly kiosks = signal<Kiosk[]>([]);
   readonly tabs = computed(() => {
     const account = this.account();
     return account ? TABS.filter(([, flag]) => Number(account[flag]) === 1) : [];
@@ -398,6 +461,8 @@ export class HrPageComponent {
         await this.loadEmployees(0);
       } else if (tab === 'requests') {
         // The requests component loads its own list.
+      } else if (tab === 'kiosks') {
+        this.kiosks.set((await this.api.get<ApiEnvelope<{ items: Kiosk[] }>>(`${this.base()}/kiosks`)).data?.items ?? []);
       } else if (tab === 'schedules') {
         this.schedules.set((await this.api.get<ApiEnvelope<{ items: Schedule[] }>>(`${this.base()}/schedules`)).data?.items ?? []);
       } else {
