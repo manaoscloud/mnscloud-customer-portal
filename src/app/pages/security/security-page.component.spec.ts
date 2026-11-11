@@ -1,4 +1,8 @@
 import {
+  antivirusName,
+  CHECK_CODES,
+  checkKey,
+  sortChecks,
   acceptanceBounds,
   canAcceptRisk,
   canRequestUnblock,
@@ -51,5 +55,22 @@ describe('Security portal page helpers', () => {
   it('splits the published report text into paragraphs', () => {
     expect(paragraphs('First line\ncontinues.\n\n  Second.  \n\n\n')).toEqual(['First line\ncontinues.', 'Second.']);
     expect(paragraphs(null)).toEqual([]);
+  });
+
+  it('V12: translates known check codes, sorts failures first and names the antivirus', () => {
+    expect(CHECK_CODES.length).toBe(49);
+    expect(checkKey('checkTitle', 'mac.filevault')).toBe('security.checkTitle.mac.filevault');
+    expect(checkKey('checkAdvice', 'ssh.root_login')).toBe('security.checkAdvice.ssh.root_login');
+    expect(checkKey('checkTitle', 'future.check')).toBeNull();
+    const sorted = sortChecks([
+      { code: 'b', severity: 'low', status: 'pass', evidence: null, failingSince: null },
+      { code: 'c', severity: 'low', status: 'fail', evidence: null, failingSince: null },
+      { code: 'a', severity: 'high', status: 'fail', evidence: null, failingSince: null },
+    ]);
+    expect(sorted.map((c) => c.code)).toEqual(['a', 'c', 'b']);
+    expect(stateKey('check', 'fail')).toBe('security.states.check.fail');
+    const server = { antivirusEngine: 'xprotect', antivirusInstalled: 1 } as never;
+    expect(antivirusName(server)).toBe('XProtect');
+    expect(antivirusName({ antivirusEngine: 'clamav', antivirusInstalled: 0 } as never)).toBeNull();
   });
 });

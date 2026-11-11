@@ -118,16 +118,149 @@ export type VulnerabilityReport = {
   /** Text the provider reviewed and published for the month (V5); null when none. */
   narrative?: string | null;
 };
-export type SecurityTab = 'dashboard' | 'servers' | 'threats' | 'vulnerabilities' | 'report' | 'secrets';
+/** Hardening check of a server (V12); the portal translates the title and advice by code. */
+export type HardeningCheck = {
+  code: string;
+  severity: string;
+  status: string;
+  evidence: string | null;
+  failingSince: string | null;
+};
+export type HardeningServer = {
+  uuid: string;
+  name: string;
+  platform: string | null;
+  score: number | null;
+  checksTotal: number;
+  checksFailed: number;
+  checksHighFailed: number;
+  lastCheckedAt: string | null;
+  antivirusEngine: string | null;
+  antivirusInstalled: number | null;
+  antivirusRealtime: number | null;
+  activeThreats: number | null;
+  checks: HardeningCheck[];
+};
+type NetworkDevice = {
+  uuid: string;
+  name: string;
+  vendor: string | null;
+  model: string | null;
+  firmwareVersion: string | null;
+  lastCollectedAt: string | null;
+  openFindings: number;
+  urgentFindings: number;
+  kevFindings: number;
+};
+type NetworkFinding = {
+  findingUUID: string;
+  deviceName: string;
+  code: string;
+  summary: string | null;
+  cvssScore: number | null;
+  kev: boolean | number;
+  priority: string;
+  firmwareVersion: string | null;
+  fixedVersion: string | null;
+};
+export type SecurityTab =
+  | 'dashboard'
+  | 'servers'
+  | 'hardening'
+  | 'threats'
+  | 'vulnerabilities'
+  | 'network'
+  | 'report'
+  | 'secrets';
 
 const TABS: readonly [SecurityTab, keyof SecurityAccount, string][] = [
   ['dashboard', 'Dashboard', 'space_dashboard'],
   ['servers', 'Servers', 'dns'],
+  ['hardening', 'Servers', 'rule'],
   ['threats', 'Threats', 'gpp_maybe'],
   ['vulnerabilities', 'Vulnerabilities', 'bug_report'],
+  ['network', 'Vulnerabilities', 'router'],
   ['report', 'Vulnerabilities', 'summarize'],
   ['secrets', 'Secrets', 'key'],
 ];
+
+/** Check codes the portal knows (same catalog as the App); others show the raw code. */
+export const CHECK_CODES: readonly string[] = [
+  'accounts.empty_password',
+  'accounts.pass_max_days',
+  'accounts.uid0',
+  'audit.auditd',
+  'files.passwd_permissions',
+  'files.shadow_permissions',
+  'firewall.active',
+  'mac.auto_install',
+  'mac.auto_login',
+  'mac.filevault',
+  'mac.firewall',
+  'mac.firewall_stealth',
+  'mac.gatekeeper',
+  'mac.guest_account',
+  'mac.screen_sharing',
+  'mac.security_updates',
+  'mac.sip',
+  'mac.ssh_password_auth',
+  'mac.update_check',
+  'mac.updates_pending',
+  'ssh.empty_passwords',
+  'ssh.max_auth_tries',
+  'ssh.password_auth',
+  'ssh.root_login',
+  'ssh.x11_forwarding',
+  'sysctl.accept_redirects',
+  'sysctl.aslr',
+  'sysctl.dmesg_restrict',
+  'sysctl.rp_filter',
+  'sysctl.send_redirects',
+  'sysctl.source_route',
+  'sysctl.suid_dumpable',
+  'sysctl.syncookies',
+  'time.sync',
+  'win.autorun_disabled',
+  'win.firewall_profiles',
+  'win.guest_disabled',
+  'win.llmnr_disabled',
+  'win.lockout_threshold',
+  'win.lsa_protection',
+  'win.password_complexity',
+  'win.password_length',
+  'win.rdp_nla',
+  'win.smb1_disabled',
+  'win.smb_signing',
+  'win.tls10_disabled',
+  'win.uac_enabled',
+  'win.update_service',
+  'win.wdigest_disabled',
+];
+
+/** Translation key of a check title, or null for a code this portal does not know yet. */
+export function checkKey(kind: 'checkTitle' | 'checkAdvice', code: string): string | null {
+  return CHECK_CODES.includes(code) ? `security.${kind}.${code}` : null;
+}
+
+/** Failed checks first (high before medium before low), then the rest by code. */
+export function sortChecks(checks: HardeningCheck[]): HardeningCheck[] {
+  const severity: Record<string, number> = { high: 0, medium: 1, low: 2 };
+  const status: Record<string, number> = { fail: 0, error: 1, pass: 2, not_applicable: 3 };
+  return [...checks].sort((a, b) =>
+    (status[a.status] ?? 4) - (status[b.status] ?? 4) ||
+    (severity[a.severity] ?? 3) - (severity[b.severity] ?? 3) ||
+    a.code.localeCompare(b.code)
+  );
+}
+
+const ANTIVIRUS_NAMES: Record<string, string> = { defender: 'Microsoft Defender', clamav: 'ClamAV', xprotect: 'XProtect' };
+
+/** Antivirus name of a server (null when there is none). */
+export function antivirusName(server: HardeningServer): string | null {
+  return server.antivirusEngine && Number(server.antivirusInstalled) === 1
+    ? (ANTIVIRUS_NAMES[server.antivirusEngine] ?? server.antivirusEngine)
+    : null;
+}
 const FINDING_STATUSES = ['open', 'accepted_risk', 'fixed', 'all'] as const;
 const PERIOD_METRICS = ['opened', 'openedP0', 'fixed', 'fixedOnTime', 'fixedLate', 'accepted', 'riskExpired'];
 const CURRENT_METRICS = ['open', 'p0', 'p1', 'p2', 'p3', 'overdue', 'kev', 'acceptedRisks'];
@@ -170,6 +303,8 @@ const KNOWN = {
   request: ['pending', 'approved', 'rejected'],
   priority: ['P0', 'P1', 'P2', 'P3', 'info'],
   finding: ['open', 'accepted_risk', 'fixed', 'false_positive'],
+  severity: ['high', 'medium', 'low'],
+  check: ['pass', 'fail', 'not_applicable', 'error'],
   secret: ['generic', 'runtime_env', 'api_token', 'password', 'certificate', 'ssh_key', 'database'],
 } as const;
 /** A revealed value disappears from the screen after this many milliseconds. */
@@ -551,6 +686,125 @@ export function canRequestUnblock(account: SecurityAccount | null, block: Block)
                 </nav>
               }
             }
+            @case ('hardening') {
+              @if (hardening().length === 0) {
+                <p class="card">{{ 'security.emptyHardening' | transloco }}</p>
+              }
+              @for (server of hardening(); track server.uuid) {
+                <article class="card">
+                  <h2>{{ server.name }}</h2>
+                  <p class="hint">
+                    {{ 'security.score' | transloco }}: {{ server.score ?? '—' }} ·
+                    {{ 'security.antivirus' | transloco }}:
+                    @if (antivirusName(server); as engine) {
+                      {{ engine }} ({{ (server.antivirusRealtime ? 'security.realtime' : 'security.onDemand') | transloco }})
+                    } @else {
+                      {{ 'security.antivirusNone' | transloco }}
+                    }
+                    · {{ 'security.activeThreats' | transloco }}: {{ server.activeThreats ?? 0 }} ·
+                    {{ 'security.lastChecked' | transloco }}: {{ when(server.lastCheckedAt) }}
+                  </p>
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th scope="col">{{ 'security.check' | transloco }}</th>
+                          <th scope="col">{{ 'security.severity' | transloco }}</th>
+                          <th scope="col">{{ 'security.checkStatus' | transloco }}</th>
+                          <th scope="col">{{ 'security.evidence' | transloco }}</th>
+                          <th scope="col">{{ 'security.howToFix' | transloco }}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (check of server.checks; track check.code) {
+                          <tr>
+                            <td>
+                              @if (checkKey('checkTitle', check.code); as key) { {{ key | transloco }} } @else { {{ check.code }} }
+                            </td>
+                            <td>{{ stateKey('severity', check.severity) | transloco }}</td>
+                            <td><span class="badge">{{ stateKey('check', check.status) | transloco }}</span></td>
+                            <td class="wrap">{{ check.evidence ?? '—' }}</td>
+                            <td class="wrap">
+                              @if (check.status === 'fail') {
+                                @if (checkKey('checkAdvice', check.code); as key) { {{ key | transloco }} }
+                              }
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </article>
+              }
+            }
+            @case ('network') {
+              @if (networkDevices().length === 0) {
+                <p class="card">{{ 'security.emptyNetwork' | transloco }}</p>
+              } @else {
+                <div class="table-wrap card">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th scope="col">{{ 'security.device' | transloco }}</th>
+                        <th scope="col">{{ 'security.model' | transloco }}</th>
+                        <th scope="col">{{ 'security.firmware' | transloco }}</th>
+                        <th scope="col">{{ 'security.openFindings' | transloco }}</th>
+                        <th scope="col">{{ 'security.urgentFindings' | transloco }}</th>
+                        <th scope="col">KEV</th>
+                        <th scope="col">{{ 'security.lastCollected' | transloco }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (item of networkDevices(); track item.uuid) {
+                        <tr>
+                          <td>{{ item.name }}</td>
+                          <td>{{ item.model ?? '—' }}</td>
+                          <td>{{ item.firmwareVersion ?? '—' }}</td>
+                          <td>{{ item.openFindings }}</td>
+                          <td>{{ item.urgentFindings }}</td>
+                          <td>{{ item.kevFindings }}</td>
+                          <td>{{ when(item.lastCollectedAt) }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                <h2>{{ 'security.networkFindings' | transloco }}</h2>
+                @if (networkFindings().length === 0) {
+                  <p class="card">{{ 'security.emptyNetworkFindings' | transloco }}</p>
+                } @else {
+                  <div class="table-wrap card">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th scope="col">{{ 'security.device' | transloco }}</th>
+                          <th scope="col">CVE</th>
+                          <th scope="col">{{ 'security.priority' | transloco }}</th>
+                          <th scope="col">CVSS</th>
+                          <th scope="col">{{ 'security.firmware' | transloco }}</th>
+                          <th scope="col">{{ 'security.fixedVersion' | transloco }}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (item of networkFindings(); track item.findingUUID) {
+                          <tr>
+                            <td>{{ item.deviceName }}</td>
+                            <td class="wrap">
+                              {{ item.code }}@if (item.kev) { <span class="badge">KEV</span> }
+                              @if (item.summary) { <span class="hint">{{ item.summary }}</span> }
+                            </td>
+                            <td><span class="badge">{{ stateKey('priority', item.priority) | transloco }}</span></td>
+                            <td>{{ item.cvssScore ?? '—' }}</td>
+                            <td>{{ item.firmwareVersion ?? '—' }}</td>
+                            <td>{{ item.fixedVersion ?? '—' }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              }
+            }
             @case ('report') {
               <div class="toolbar no-print">
                 <mat-form-field>
@@ -817,6 +1071,9 @@ export class SecurityPageComponent {
   readonly notice = signal<string | null>(null);
   readonly dashboard = signal<Dashboard | null>(null);
   readonly servers = signal<Server[]>([]);
+  readonly hardening = signal<HardeningServer[]>([]);
+  readonly networkDevices = signal<NetworkDevice[]>([]);
+  readonly networkFindings = signal<NetworkFinding[]>([]);
   readonly alerts = signal<Alert[]>([]);
   readonly alertStatus = signal('');
   readonly alertOffset = signal(0);
@@ -845,6 +1102,8 @@ export class SecurityPageComponent {
   }
 
   readonly paragraphs = paragraphs;
+  readonly checkKey = checkKey;
+  readonly antivirusName = antivirusName;
 
   when(value: string | null): string {
     if (!value) return '—';
@@ -888,6 +1147,16 @@ export class SecurityPageComponent {
         this.dashboard.set((await this.api.get<ApiEnvelope<Dashboard>>(`${this.base()}/dashboard`)).data ?? null);
       } else if (tab === 'servers') {
         this.servers.set((await this.api.get<ApiEnvelope<{ items: Server[] }>>(`${this.base()}/servers`)).data?.items ?? []);
+      } else if (tab === 'hardening') {
+        const items = (await this.api.get<ApiEnvelope<{ items: HardeningServer[] }>>(`${this.base()}/hardening`)).data?.items ?? [];
+        this.hardening.set(items.map((item) => ({ ...item, checks: sortChecks(item.checks ?? []) })));
+      } else if (tab === 'network') {
+        const [devices, findings] = await Promise.all([
+          this.api.get<ApiEnvelope<{ items: NetworkDevice[] }>>(`${this.base()}/network-devices`),
+          this.api.get<ApiEnvelope<{ items: NetworkFinding[] }>>(`${this.base()}/network-devices/findings?limit=200`),
+        ]);
+        this.networkDevices.set(devices.data?.items ?? []);
+        this.networkFindings.set(findings.data?.items ?? []);
       } else if (tab === 'threats') {
         await Promise.all([this.loadAlerts(0), this.loadBlocks()]);
       } else if (tab === 'vulnerabilities') {
