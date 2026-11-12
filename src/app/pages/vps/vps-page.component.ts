@@ -9,6 +9,7 @@ import { PortalI18nService } from '../../core/i18n/portal-i18n.service';
 import type { ApiEnvelope } from '../../models/session.model';
 import { VpsConsoleComponent } from './vps-console.component';
 import { VpsMetricsComponent } from './vps-metrics.component';
+import { VpsNetworkComponent } from './vps-network.component';
 import { VpsSnapshotsComponent } from './vps-snapshots.component';
 import {
   memoryLabel,
@@ -36,6 +37,7 @@ const REFRESH_LIMIT = 24;
     TranslocoPipe,
     VpsConsoleComponent,
     VpsMetricsComponent,
+    VpsNetworkComponent,
     VpsSnapshotsComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -166,6 +168,10 @@ const REFRESH_LIMIT = 24;
                     <mat-icon>monitoring</mat-icon>
                     {{ 'vps.metrics.open' | transloco }}
                   </button>
+                  <button matButton="outlined" type="button" (click)="network.set(server)">
+                    <mat-icon>lan</mat-icon>
+                    {{ 'vps.network.open' | transloco }}
+                  </button>
                   <button matButton="outlined" type="button" (click)="snapshots.set(server)">
                     <mat-icon>photo_library</mat-icon>
                     {{ 'vps.snapshots.open' | transloco }}
@@ -189,6 +195,9 @@ const REFRESH_LIMIT = 24;
     }
     @if (metrics(); as server) {
       <mcp-vps-metrics [server]="server" (closed)="metrics.set(null)" />
+    }
+    @if (network(); as server) {
+      <mcp-vps-network [server]="server" (closed)="network.set(null)" />
     }
     @if (snapshots(); as server) {
       <mcp-vps-snapshots [server]="server" (closed)="closeSnapshots()" />
@@ -303,6 +312,7 @@ export class VpsPageComponent {
   readonly console = signal<VpsServer | null>(null);
   readonly metrics = signal<VpsServer | null>(null);
   readonly snapshots = signal<VpsServer | null>(null);
+  readonly network = signal<VpsServer | null>(null);
   private timer: ReturnType<typeof setTimeout> | undefined;
   private refreshes = 0;
 
