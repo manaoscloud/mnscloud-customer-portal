@@ -373,7 +373,9 @@ export class VpsPageComponent {
           ? 'vps.powerHeld'
           : code === 'VPS_POWER_STATE_CONFLICT'
             ? 'vps.powerConflict'
-            : 'vps.powerFailed',
+            : code === 'VPS_OPERATION_IN_PROGRESS'
+              ? 'vps.operationInProgress'
+              : 'vps.powerFailed',
       );
       void this.load();
     } finally {

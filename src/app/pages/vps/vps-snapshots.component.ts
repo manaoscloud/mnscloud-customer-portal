@@ -35,6 +35,7 @@ const REFUSALS: Record<string, string> = {
   VPS_SNAPSHOT_STATE_CONFLICT: 'vps.snapshots.busy',
   VPS_SNAPSHOT_UNSUPPORTED: 'vps.snapshots.unsupported',
   VPS_POWER_BILLING_CONTROLLED: 'vps.powerHeld',
+  VPS_OPERATION_IN_PROGRESS: 'vps.operationInProgress',
 };
 
 type Pending = { uuid: string; action: 'restore' | 'delete' };

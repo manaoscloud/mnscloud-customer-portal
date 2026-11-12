@@ -177,6 +177,12 @@ describe('VPS portal panels', () => {
     expect(snack).toHaveBeenLastCalledWith('vps.snapshots.limitReached', 'common.ok', {
       duration: 6000,
     });
+    apiPost.mockRejectedValueOnce(new ApiError('busy', 409, 'VPS_OPERATION_IN_PROGRESS'));
+    panel.name.set('another');
+    await panel.create();
+    expect(snack).toHaveBeenLastCalledWith('vps.operationInProgress', 'common.ok', {
+      duration: 6000,
+    });
   });
 
   it('refuses an invalid snapshot name without calling the API', async () => {
