@@ -5,10 +5,11 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ApiService } from '../../services/api.service';
 import type { ApiEnvelope } from '../../models/session.model';
 import { HrRequestsComponent } from './hr-requests.component';
+import { buildTimesheetHtml, printHtml, type PrintTimesheet } from './timesheet-print';
 
 export type HrAccount = {
   HraUUID: string;
@@ -319,6 +320,10 @@ export function localDateTime(value: string | null, language: string): string {
                   <mat-label>{{ 'hr.month' | transloco }}</mat-label>
                   <input matInput type="month" [value]="month()" (change)="setMonth($event)" />
                 </mat-form-field>
+                <button mat-stroked-button type="button" [disabled]="!employee() || printing()" (click)="printTimesheet()">
+                  <mat-icon>print</mat-icon>
+                  {{ 'hr.print.button' | transloco }}
+                </button>
               </div>
               @if (!employee()) {
                 <p class="card">{{ 'hr.pickEmployee' | transloco }}</p>
@@ -390,6 +395,8 @@ export function localDateTime(value: string | null, language: string): string {
 })
 export class HrPageComponent {
   private readonly api = inject(ApiService);
+  private readonly transloco = inject(TranslocoService);
+  readonly printing = signal(false);
   readonly page = PAGE;
   readonly metrics = METRICS;
   readonly hours = hours;
@@ -526,6 +533,26 @@ export class HrPageComponent {
       this.days.set(response.data?.items ?? []);
     } catch {
       this.error.set(true);
+    }
+  }
+
+  /** Art. 84 timesheet of the selected employee and month, printed (or saved as PDF) by the browser. */
+  async printTimesheet() {
+    const employee = this.employee();
+    if (!employee || this.printing()) return;
+    this.printing.set(true);
+    this.error.set(false);
+    try {
+      const query = new URLSearchParams({ employeeUUID: employee, month: this.month() });
+      const response = await this.api.get<ApiEnvelope<PrintTimesheet>>(`${this.base()}/timesheets/print?${query}`);
+      if (!response.data) throw new Error('empty');
+      const lang = this.transloco.getActiveLang();
+      const html = buildTimesheetHtml(response.data, (key, params) => this.transloco.translate(key, params), lang);
+      printHtml(html);
+    } catch {
+      this.error.set(true);
+    } finally {
+      this.printing.set(false);
     }
   }
 
