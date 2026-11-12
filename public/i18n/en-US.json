@@ -1045,6 +1045,7 @@
   "vps.powerHeld": "The power of this server is suspended until the payment is settled.",
   "vps.powerConflict": "The server is not in a state that allows this action. Refresh and try again.",
   "vps.powerFailed": "The action could not be run. Try again in a moment.",
+  "vps.operationInProgress": "Another action of this server is still running. Try again when it finishes.",
   "vps.openConsole": "Console",
   "vps.console": "Console",
   "vps.consolePassword": "Console password",

@@ -1045,6 +1045,7 @@
   "vps.powerHeld": "A energia deste servidor está suspensa até a regularização financeira.",
   "vps.powerConflict": "O servidor não está em um estado que permita esta ação. Atualize e tente de novo.",
   "vps.powerFailed": "Não foi possível executar a ação. Tente novamente em instantes.",
+  "vps.operationInProgress": "Outra ação deste servidor ainda está em andamento. Tente de novo quando ela terminar.",
   "vps.openConsole": "Console",
   "vps.console": "Console",
   "vps.consolePassword": "Senha do console",
