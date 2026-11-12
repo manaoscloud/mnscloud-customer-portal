@@ -25,6 +25,8 @@ const SERVER: VpsServer = {
   CanPower: 1,
   CanConsole: 1,
   CanSnapshots: 1,
+  CanNetwork: 1,
+  CanFirewall: 0,
   DateCreated: null,
 };
 

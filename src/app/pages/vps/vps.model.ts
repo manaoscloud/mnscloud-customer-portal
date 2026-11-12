@@ -17,6 +17,8 @@ export type VpsServer = {
   CanPower: number;
   CanConsole: number;
   CanSnapshots: number;
+  CanNetwork: number;
+  CanFirewall: number;
   DateCreated: string | null;
 };
 
@@ -176,4 +178,74 @@ export function metricValue(value: number | null | undefined, unit: string): str
     return `${n.toFixed(n >= 100 || i === 0 ? 0 : 1)} ${steps[i]}${rate}`;
   }
   return `${Number(value.toFixed(2))} ${unit}`.trim();
+}
+
+/** V3: a firewall rule as the portal shows and edits it. */
+export type VpsFirewallRule = {
+  Direction: 'in' | 'out';
+  Action: 'allow' | 'deny';
+  Protocol: 'tcp' | 'udp' | 'icmp' | 'icmpv6' | 'all';
+  PortFrom: number | null;
+  PortTo: number | null;
+  RemoteCidrs: string[];
+  RemoteNetworkCount: number;
+  Priority: number;
+  Comment: string | null;
+};
+
+export type VpsNetwork = {
+  publicIps: Array<{ HpiUUID: string; Address: string; PtrName: string | null }>;
+  firewalls: Array<{
+    HvfUUID: string;
+    Name: string;
+    Managed: number;
+    Status: string;
+    Pending: number;
+    OutboundPolicy: string;
+    Rules: VpsFirewallRule[];
+  }>;
+  canNetwork: number;
+  canFirewall: number;
+  firewall: { maxRules: number; outbound: boolean; deny: boolean; icmpv6: boolean } | null;
+};
+
+/** "TCP 22", "UDP 1000-2000", "ICMP", "All". */
+export function ruleTraffic(
+  rule: Pick<VpsFirewallRule, 'Protocol' | 'PortFrom' | 'PortTo'>,
+): string {
+  const protocol = rule.Protocol === 'all' ? 'All' : rule.Protocol.toUpperCase();
+  if (rule.PortFrom === null || rule.PortFrom === undefined) return protocol;
+  const ports =
+    rule.PortTo && rule.PortTo !== rule.PortFrom
+      ? `${rule.PortFrom}-${rule.PortTo}`
+      : `${rule.PortFrom}`;
+  return `${protocol} ${ports}`;
+}
+
+/** Body of the portal firewall API for a rule (no private networks). */
+export function ruleInput(rule: VpsFirewallRule) {
+  return {
+    direction: rule.Direction,
+    action: rule.Action,
+    protocol: rule.Protocol,
+    portFrom: rule.PortFrom,
+    portTo: rule.PortTo,
+    remoteCidrs: rule.RemoteCidrs,
+    priority: rule.Priority,
+    comment: rule.Comment,
+  };
+}
+
+/** CIDR list typed by the customer ("203.0.113.0/24, ::/0"); empty means anywhere. */
+export function parseSources(text: string): string[] {
+  const items = text
+    .split(/[\s,;]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return items.length ? [...new Set(items)] : ['0.0.0.0/0', '::/0'];
+}
+
+/** True when no inbound allow rule is left: the server would accept no connection at all. */
+export function blocksAllInbound(rules: VpsFirewallRule[]): boolean {
+  return !rules.some((rule) => rule.Direction === 'in' && rule.Action === 'allow');
 }
