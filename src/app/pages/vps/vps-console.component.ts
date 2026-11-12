@@ -75,7 +75,9 @@ function ensureTerminalStyles() {
       <header>
         <div>
           <strong>{{ 'vps.console' | transloco }} · {{ server().HviName }}</strong>
-          <span class="status" [class.error]="failed()" role="status">{{ status() | transloco }}</span>
+          <span class="status" [class.error]="failed()" role="status">{{
+            status() | transloco
+          }}</span>
         </div>
         <div class="actions">
           @if (passwordAvailable()) {
@@ -101,7 +103,9 @@ function ensureTerminalStyles() {
             }
           }
           @if (type() === 'vnc') {
-            <button matButton="outlined" type="button" (click)="sendCtrlAltDel()">Ctrl+Alt+Del</button>
+            <button matButton="outlined" type="button" (click)="sendCtrlAltDel()">
+              Ctrl+Alt+Del
+            </button>
           }
           <button matButton="outlined" type="button" (click)="reconnect()">
             <mat-icon>refresh</mat-icon>
@@ -251,7 +255,11 @@ export class VpsConsoleComponent {
       );
       session = envelope.data;
     } catch (error) {
-      this.fail(error instanceof ApiError && error.status === 409 ? 'vps.consoleNotRunning' : 'vps.consoleFailed');
+      this.fail(
+        error instanceof ApiError && error.status === 409
+          ? 'vps.consoleNotRunning'
+          : 'vps.consoleFailed',
+      );
       return;
     }
     if (!session?.token) return this.fail('vps.consoleFailed');
@@ -266,7 +274,11 @@ export class VpsConsoleComponent {
     ensureTerminalStyles();
     const { Terminal } = await import('@xterm/xterm');
     const host = this.screen().nativeElement;
-    const terminal = new Terminal({ cursorBlink: true, fontSize: 14, theme: { background: '#000000' } });
+    const terminal = new Terminal({
+      cursorBlink: true,
+      fontSize: 14,
+      theme: { background: '#000000' },
+    });
     terminal.open(host);
     const fit = () => {
       terminal.resize(

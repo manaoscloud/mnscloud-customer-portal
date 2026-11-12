@@ -8,6 +8,8 @@ import { ApiError, ApiService } from '../../services/api.service';
 import { PortalI18nService } from '../../core/i18n/portal-i18n.service';
 import type { ApiEnvelope } from '../../models/session.model';
 import { VpsConsoleComponent } from './vps-console.component';
+import { VpsMetricsComponent } from './vps-metrics.component';
+import { VpsSnapshotsComponent } from './vps-snapshots.component';
 import {
   memoryLabel,
   powerActions,
@@ -27,7 +29,15 @@ const REFRESH_LIMIT = 24;
 
 @Component({
   selector: 'mcp-vps-page',
-  imports: [MatButtonModule, MatIconModule, MatTooltipModule, TranslocoPipe, VpsConsoleComponent],
+  imports: [
+    MatButtonModule,
+    MatIconModule,
+    MatTooltipModule,
+    TranslocoPipe,
+    VpsConsoleComponent,
+    VpsMetricsComponent,
+    VpsSnapshotsComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -91,15 +101,21 @@ const REFRESH_LIMIT = 24;
               }
               @if (server.PublicIpv6) {
                 <dt>{{ 'vps.publicIpv6' | transloco }}</dt>
-                <dd><code>{{ server.PublicIpv6 }}</code></dd>
+                <dd>
+                  <code>{{ server.PublicIpv6 }}</code>
+                </dd>
               }
               @if (server.PrivateIpv4) {
                 <dt>{{ 'vps.privateIpv4' | transloco }}</dt>
-                <dd><code>{{ server.PrivateIpv4 }}</code></dd>
+                <dd>
+                  <code>{{ server.PrivateIpv4 }}</code>
+                </dd>
               }
               @if (server.Username) {
                 <dt>{{ 'vps.user' | transloco }}</dt>
-                <dd><code>{{ server.Username }}</code></dd>
+                <dd>
+                  <code>{{ server.Username }}</code>
+                </dd>
               }
               @if (server.Vcpus || memory(server) || server.DiskGb) {
                 <dt>{{ 'vps.resources' | transloco }}</dt>
@@ -145,6 +161,16 @@ const REFRESH_LIMIT = 24;
                     {{ 'vps.power.' + action | transloco }}
                   </button>
                 }
+                @if (server.Provisioned === 1) {
+                  <button matButton="outlined" type="button" (click)="metrics.set(server)">
+                    <mat-icon>monitoring</mat-icon>
+                    {{ 'vps.metrics.open' | transloco }}
+                  </button>
+                  <button matButton="outlined" type="button" (click)="snapshots.set(server)">
+                    <mat-icon>photo_library</mat-icon>
+                    {{ 'vps.snapshots.open' | transloco }}
+                  </button>
+                }
                 @if (server.CanConsole === 1 && state(server) === 'running') {
                   <button matButton="filled" type="button" (click)="console.set(server)">
                     <mat-icon>terminal</mat-icon>
@@ -160,6 +186,12 @@ const REFRESH_LIMIT = 24;
 
     @if (console(); as server) {
       <mcp-vps-console [server]="server" (closed)="console.set(null)" />
+    }
+    @if (metrics(); as server) {
+      <mcp-vps-metrics [server]="server" (closed)="metrics.set(null)" />
+    }
+    @if (snapshots(); as server) {
+      <mcp-vps-snapshots [server]="server" (closed)="closeSnapshots()" />
     }
   `,
   styles: `
@@ -269,6 +301,8 @@ export class VpsPageComponent {
   readonly busy = signal<string | null>(null);
   readonly confirming = signal<{ uuid: string; action: VpsPowerAction } | null>(null);
   readonly console = signal<VpsServer | null>(null);
+  readonly metrics = signal<VpsServer | null>(null);
+  readonly snapshots = signal<VpsServer | null>(null);
   private timer: ReturnType<typeof setTimeout> | undefined;
   private refreshes = 0;
 
@@ -325,7 +359,9 @@ export class VpsPageComponent {
       );
       const item = response.data?.item;
       if (item) {
-        this.servers.update((list) => list.map((row) => (row.HviUUID === item.HviUUID ? item : row)));
+        this.servers.update((list) =>
+          list.map((row) => (row.HviUUID === item.HviUUID ? item : row)),
+        );
       }
       this.notify(`vps.queued.${action}`);
       this.refreshes = 0;
@@ -344,6 +380,13 @@ export class VpsPageComponent {
       this.busy.set(null);
       this.confirming.set(null);
     }
+  }
+
+  /** A restore changes the server state: refresh the cards when the snapshots panel closes. */
+  closeSnapshots(): void {
+    this.snapshots.set(null);
+    this.refreshes = 0;
+    void this.load();
   }
 
   async copy(value: string | null): Promise<void> {
