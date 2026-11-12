@@ -88,7 +88,13 @@ export const routes: Routes = [
       },
       {
         path: 'vps',
-        loadComponent: () => import('./pages/vps/vps-page.component').then((m) => m.VpsPageComponent),
+        loadComponent: () =>
+          import('./pages/vps/vps-page.component').then((m) => m.VpsPageComponent),
+      },
+      {
+        path: 'storage',
+        loadComponent: () =>
+          import('./pages/storage/storage-page.component').then((m) => m.StoragePageComponent),
       },
       {
         path: 'webhost',
