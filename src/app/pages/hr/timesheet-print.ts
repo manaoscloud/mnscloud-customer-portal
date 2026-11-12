@@ -38,6 +38,7 @@ export type PrintTimesheet = {
     schedules?: PrintSchedule[] | null;
     period?: { From?: string | null; To?: string | null } | null;
     IssuedAt?: string | null;
+    IssuedAtLocal?: string | null;
     Timezone?: string | null;
   } | null;
 };
@@ -172,7 +173,7 @@ export function buildTimesheetHtml(body: PrintTimesheet, t: Translate, language:
         `<tr><td>${e(dateText(day.Date))}</td><td>${e(kindText)}</td><td>${marks.join(' ') || '—'}</td>` +
         `<td class="n">${minutesText(day['ExpectedMinutes'])}</td><td class="n">${minutesText(day['WorkedMinutes'])}</td>` +
         `<td class="n">${minutesText(overtime)}</td><td class="n">${minutesText(day['AbsenceMinutes'])}</td>` +
-        `<td class="n">${minutesText(day['LateMinutes'])}</td><td class="n">${minutesText(day['NightMinutes'])}</td>` +
+        `<td class="n">${minutesText(day['LateMinutes'])}</td><td class="n">${minutesText(day['NightReducedMinutes'] ?? day['NightMinutes'])}</td>` +
         `<td class="n">${minutesText(day['BalanceMinutes'], true)}</td><td>${e(flags)}</td></tr>`
       );
     })
@@ -186,7 +187,7 @@ export function buildTimesheetHtml(body: PrintTimesheet, t: Translate, language:
     ? `<h2>${e(t('hr.print.legend'))}</h2><p>${e(t('hr.print.legendText'))}</p><table><tr><th>${e(t('hr.date'))}</th><th></th><th>${e(t('hr.print.time'))}</th><th>${e(t('hr.print.type'))}</th><th>${e(t('hr.print.reason'))}</th></tr>${legend.join('')}</table>`
     : '';
   const title = t('hr.print.title');
-  const issued = issuedText(header.IssuedAt, header.Timezone, language);
+  const issued = header.IssuedAtLocal || issuedText(header.IssuedAt, header.Timezone, language);
   return `<!doctype html><html lang="${e(language)}"><head><meta charset="utf-8"><title>${e(title)}</title><style>${STYLE}</style></head><body>
 <h1>${e(title)}</h1>
 <table class="kv">
@@ -198,7 +199,7 @@ export function buildTimesheetHtml(body: PrintTimesheet, t: Translate, language:
 ${scheduleRows ? `<h2>${e(t('hr.print.schedules'))}</h2><table>${scheduleRows}</table>` : ''}
 <h2>${e(t('hr.print.days'))}</h2>
 <table><thead><tr>${headRow}</tr></thead><tbody>${dayRows}</tbody>
-<tfoot><tr><th colspan="3">${e(t('hr.print.totals'))}</th><th class="n">${minutesText(totals['ExpectedMinutes'])}</th><th class="n">${minutesText(totals['WorkedMinutes'])}</th><th class="n">${minutesText(totalOvertime)}</th><th class="n">${minutesText(totals['AbsenceMinutes'])}</th><th class="n">${minutesText(totals['LateMinutes'])}</th><th class="n">${minutesText(totals['NightMinutes'])}</th><th class="n">${minutesText(totals['BalanceMinutes'], true)}</th><th></th></tr></tfoot></table>
+<tfoot><tr><th colspan="3">${e(t('hr.print.totals'))}</th><th class="n">${minutesText(totals['ExpectedMinutes'])}</th><th class="n">${minutesText(totals['WorkedMinutes'])}</th><th class="n">${minutesText(totalOvertime)}</th><th class="n">${minutesText(totals['AbsenceMinutes'])}</th><th class="n">${minutesText(totals['LateMinutes'])}</th><th class="n">${minutesText(totals['NightReducedMinutes'] ?? totals['NightMinutes'])}</th><th class="n">${minutesText(totals['BalanceMinutes'], true)}</th><th></th></tr></tfoot></table>
 ${legendHtml}
 <div class="foot"><span>${e(t('hr.print.issuedAt'))}: ${e(issued)}${header.Timezone ? ` (${e(header.Timezone)})` : ''}</span><span>${e(t('hr.print.period'))}: ${e(period)}</span></div>
 </body></html>`;
