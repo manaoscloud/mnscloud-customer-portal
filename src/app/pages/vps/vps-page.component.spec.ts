@@ -24,6 +24,7 @@ const SERVER: VpsServer = {
   GraphicalConsole: 1,
   CanPower: 1,
   CanConsole: 1,
+  CanSnapshots: 1,
   DateCreated: null,
 };
 
