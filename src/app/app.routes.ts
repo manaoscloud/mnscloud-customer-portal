@@ -97,6 +97,11 @@ export const routes: Routes = [
           import('./pages/storage/storage-page.component').then((m) => m.StoragePageComponent),
       },
       {
+        path: 'smtp',
+        loadComponent: () =>
+          import('./pages/smtp/smtp-page.component').then((m) => m.SmtpPageComponent),
+      },
+      {
         path: 'webhost',
         loadComponent: () =>
           import('./pages/webhost/webhost-page.component').then((m) => m.WebhostPageComponent),
