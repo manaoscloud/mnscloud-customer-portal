@@ -7,6 +7,7 @@ describe('HR portal page helpers', () => {
     expect(hours(-30, true)).toBe('-0:30');
     expect(hours(75, true)).toBe('+1:15');
     expect(hours(0, true)).toBe('0:00');
+    expect(hours(null)).toBe('—');
   });
 
   it('covers the whole month, leap years included', () => {

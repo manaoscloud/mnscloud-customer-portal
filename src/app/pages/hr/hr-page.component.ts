@@ -48,9 +48,9 @@ type Day = {
   DayKind: string;
   HolidayName: string | null;
   WorkScheduleName: string | null;
-  ExpectedMinutes: number;
-  WorkedMinutes: number;
-  BalanceMinutes: number;
+  ExpectedMinutes: number | null;
+  WorkedMinutes: number | null;
+  BalanceMinutes: number | null;
   LateMinutes: number;
   OvertimeMinutes: number;
   AbsenceMinutes: number;
@@ -86,7 +86,8 @@ const FLAGS = [
 ];
 
 /** Minutes as h:mm, with the sign of a balance. */
-export function hours(minutes: number, signed = false): string {
+export function hours(minutes: number | null | undefined, signed = false): string {
+  if (minutes === null || minutes === undefined) return '—';
   const value = Math.abs(Math.round(minutes || 0));
   const text = `${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`;
   return signed && minutes < 0 ? `-${text}` : signed && minutes > 0 ? `+${text}` : text;
@@ -356,7 +357,7 @@ export function localDateTime(value: string | null, language: string): string {
                           <td>{{ day.HolidayName ?? ('hr.dayKinds.' + dayKind(day.DayKind) | transloco) }}</td>
                           <td>{{ hours(day.ExpectedMinutes) }}</td>
                           <td>{{ hours(day.WorkedMinutes) }}</td>
-                          <td [class.negative]="day.BalanceMinutes < 0">{{ hours(day.BalanceMinutes, true) }}</td>
+                          <td [class.negative]="(day.BalanceMinutes ?? 0) < 0">{{ hours(day.BalanceMinutes, true) }}</td>
                           <td>{{ day.PunchCount }}</td>
                           <td>
                             @for (flag of flagsOf(day); track flag) {

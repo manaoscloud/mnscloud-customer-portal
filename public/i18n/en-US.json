@@ -1191,6 +1191,7 @@
   "hr.print.type": "Type",
   "hr.print.reason": "Reason",
   "hr.print.issuedAt": "Issued at",
+  "hr.print.totalsOmitted": "Totals per employment are not available yet: the employee has another employment this month.",
   "hr.print.error": "The timesheet could not be generated.",
   "hr.print.type.clock_in": "Clock in",
   "hr.print.type.break_start": "Break start",

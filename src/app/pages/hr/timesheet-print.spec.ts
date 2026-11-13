@@ -67,6 +67,18 @@ describe('timesheet print', () => {
     expect(html).not.toContain('[hr.print.legend]');
   });
 
+  it('prints dashes and the notice when totals are omitted (null minutes)', () => {
+    const omitted: PrintTimesheet = {
+      totalsScope: 'omitted',
+      totals: { WorkDays: 1, WorkedMinutes: null, BalanceMinutes: null },
+      days: [{ Date: '2026-10-01', DayKind: 'work', WorkedMinutes: null, BalanceMinutes: null, ExpectedMinutes: null }],
+    };
+    const html = buildTimesheetHtml(omitted, t, 'pt-BR');
+    expect(html).toContain('[hr.print.totalsOmitted]');
+    expect(html).not.toContain('0:00');
+    expect(buildTimesheetHtml(body, t, 'pt-BR')).not.toContain('[hr.print.totalsOmitted]');
+  });
+
   it('formats minutes', () => {
     expect(minutesText(75, true)).toBe('+1:15');
     expect(minutesText(undefined)).toBe('0:00');

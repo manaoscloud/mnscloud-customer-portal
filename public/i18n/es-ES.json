@@ -1191,6 +1191,7 @@
   "hr.print.type": "Tipo",
   "hr.print.reason": "Motivo",
   "hr.print.issuedAt": "Emitido el",
+  "hr.print.totalsOmitted": "Los totales por vínculo aún no están disponibles: el colaborador tiene otro vínculo este mes.",
   "hr.print.error": "No se pudo generar la hoja de horas.",
   "hr.print.type.clock_in": "Entrada",
   "hr.print.type.break_start": "Inicio del descanso",
