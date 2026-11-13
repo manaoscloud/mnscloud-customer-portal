@@ -34,6 +34,9 @@ export type PrintTimesheet = {
       HireDate?: string | null;
       PositionName?: string | null;
       DepartmentName?: string | null;
+      RegistrationNumber?: string | null;
+      LocationName?: string | null;
+      TerminationDate?: string | null;
     } | null;
     schedules?: PrintSchedule[] | null;
     period?: { From?: string | null; To?: string | null } | null;
@@ -195,6 +198,8 @@ export function buildTimesheetHtml(body: PrintTimesheet, t: Translate, language:
 <tr><th>${e(t('hr.print.employee'))}</th><td>${dash(employee.Name)}</td><th>${e(t('hr.print.cpf'))}</th><td>${dash(employee.Document)}</td></tr>
 <tr><th>${e(t('hr.print.hireDate'))}</th><td>${employee.HireDate ? e(dateText(employee.HireDate)) : '—'}</td><th>${e(t('hr.print.position'))}</th><td>${dash(employee.PositionName)}</td></tr>
 <tr><th>${e(t('hr.print.period'))}</th><td>${e(period)}</td><th>${e(t('hr.print.department'))}</th><td>${dash(employee.DepartmentName)}</td></tr>
+<tr><th>${e(t('hr.print.registration'))}</th><td>${dash(employee.RegistrationNumber)}</td><th>${e(t('hr.print.location'))}</th><td>${dash(employee.LocationName)}</td></tr>
+${employee.TerminationDate ? `<tr><th>${e(t('hr.print.termination'))}</th><td>${e(dateText(employee.TerminationDate))}</td><th></th><td></td></tr>` : ''}
 </table>
 ${scheduleRows ? `<h2>${e(t('hr.print.schedules'))}</h2><table>${scheduleRows}</table>` : ''}
 <h2>${e(t('hr.print.days'))}</h2>

@@ -32,6 +32,10 @@ type Employee = {
   DepartmentName: string | null;
   PositionName: string | null;
   TimeClockStatus: string | null;
+  LocationName?: string | null;
+  RegistrationNumber?: string | null;
+  /** Present only when the API sends the employment of the row; print then follows it. */
+  EmploymentUUID?: string | null;
 };
 type ScheduleDay = { position: number; start: string | null; breakStart: string | null; breakEnd: string | null; end: string | null };
 type Schedule = {
@@ -205,7 +209,9 @@ export function localDateTime(value: string | null, language: string): string {
                     <thead>
                       <tr>
                         <th scope="col">{{ 'hr.employee' | transloco }}</th>
+                        <th scope="col">{{ 'hr.registrationNumber' | transloco }}</th>
                         <th scope="col">{{ 'hr.company' | transloco }}</th>
+                        <th scope="col">{{ 'hr.location' | transloco }}</th>
                         <th scope="col">{{ 'hr.department' | transloco }}</th>
                         <th scope="col">{{ 'hr.position' | transloco }}</th>
                         <th scope="col">{{ 'hr.timeClock' | transloco }}</th>
@@ -215,7 +221,9 @@ export function localDateTime(value: string | null, language: string): string {
                       @for (item of employees(); track item.EmployeeUUID) {
                         <tr>
                           <td>{{ item.Name }}</td>
+                          <td>{{ item.RegistrationNumber || '—' }}</td>
                           <td>{{ item.CompanyName ?? '—' }}</td>
+                          <td>{{ item.LocationName || '—' }}</td>
                           <td>{{ item.DepartmentName ?? '—' }}</td>
                           <td>{{ item.PositionName ?? '—' }}</td>
                           <td>{{ (item.TimeClockStatus === 'active' ? 'hr.clockActive' : 'hr.clockNone') | transloco }}</td>
@@ -544,6 +552,8 @@ export class HrPageComponent {
     this.error.set(false);
     try {
       const query = new URLSearchParams({ employeeUUID: employee, month: this.month() });
+      const employmentUUID = this.people().find((person) => person.EmployeeUUID === employee)?.EmploymentUUID;
+      if (employmentUUID) query.set('employmentUUID', employmentUUID);
       const response = await this.api.get<ApiEnvelope<PrintTimesheet>>(`${this.base()}/timesheets/print?${query}`);
       if (!response.data) throw new Error('empty');
       const lang = this.transloco.getActiveLang();

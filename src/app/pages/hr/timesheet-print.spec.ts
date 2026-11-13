@@ -5,7 +5,7 @@ const t = (key: string) => `[${key}]`;
 const body: PrintTimesheet = {
   header: {
     employer: { Name: 'Posto <b>X</b> & Cia', Document: '12.345.678/0001-90', DocumentKind: 'cnpj' },
-    employee: { Name: 'Ana "A" <script>', Document: '123.456.789-09', HireDate: '2024-03-05', PositionName: 'Frentista', DepartmentName: null },
+    employee: { Name: 'Ana "A" <script>', Document: '123.456.789-09', HireDate: '2024-03-05', PositionName: 'Frentista', DepartmentName: null, RegistrationNumber: 'M-77', LocationName: 'Loja <i>1</i>', TerminationDate: '2026-10-20' },
     schedules: [{ Name: 'Escala 6x1', Kind: 'weekly', Days: [{ Position: 1, Start: '08:00', BreakStart: '12:00', BreakEnd: '13:00', End: '17:00' }] }],
     period: { From: '2026-10-01', To: '2026-10-31' },
     IssuedAt: '2026-11-12T15:00:00Z',
@@ -50,6 +50,15 @@ describe('timesheet print', () => {
     expect(html).toContain('[hr.print.legend]');
     expect(html).toContain('Duplicada');
     expect(html).toContain('-0:15');
+  });
+
+  it('prints registration, location and termination of the employment', () => {
+    const html = buildTimesheetHtml(body, t, 'pt-BR');
+    expect(html).toContain('M-77');
+    expect(html).toContain('Loja &lt;i&gt;1&lt;/i&gt;');
+    expect(html).toContain('[hr.print.termination]');
+    expect(html).toContain('20/10/2026');
+    expect(buildTimesheetHtml({ header: { employee: { Name: 'A' } } }, t, 'pt-BR')).not.toContain('[hr.print.termination]');
   });
 
   it('tolerates a body without header, adjustments or days', () => {
