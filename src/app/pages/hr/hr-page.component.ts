@@ -32,6 +32,8 @@ type Employee = {
   DepartmentName: string | null;
   PositionName: string | null;
   TimeClockStatus: string | null;
+  LocationName?: string | null;
+  RegistrationNumber?: string | null;
 };
 type ScheduleDay = { position: number; start: string | null; breakStart: string | null; breakEnd: string | null; end: string | null };
 type Schedule = {
@@ -46,9 +48,9 @@ type Day = {
   DayKind: string;
   HolidayName: string | null;
   WorkScheduleName: string | null;
-  ExpectedMinutes: number;
-  WorkedMinutes: number;
-  BalanceMinutes: number;
+  ExpectedMinutes: number | null;
+  WorkedMinutes: number | null;
+  BalanceMinutes: number | null;
   LateMinutes: number;
   OvertimeMinutes: number;
   AbsenceMinutes: number;
@@ -84,7 +86,8 @@ const FLAGS = [
 ];
 
 /** Minutes as h:mm, with the sign of a balance. */
-export function hours(minutes: number, signed = false): string {
+export function hours(minutes: number | null | undefined, signed = false): string {
+  if (minutes === null || minutes === undefined) return '—';
   const value = Math.abs(Math.round(minutes || 0));
   const text = `${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`;
   return signed && minutes < 0 ? `-${text}` : signed && minutes > 0 ? `+${text}` : text;
@@ -205,7 +208,9 @@ export function localDateTime(value: string | null, language: string): string {
                     <thead>
                       <tr>
                         <th scope="col">{{ 'hr.employee' | transloco }}</th>
+                        <th scope="col">{{ 'hr.registrationNumber' | transloco }}</th>
                         <th scope="col">{{ 'hr.company' | transloco }}</th>
+                        <th scope="col">{{ 'hr.location' | transloco }}</th>
                         <th scope="col">{{ 'hr.department' | transloco }}</th>
                         <th scope="col">{{ 'hr.position' | transloco }}</th>
                         <th scope="col">{{ 'hr.timeClock' | transloco }}</th>
@@ -215,7 +220,9 @@ export function localDateTime(value: string | null, language: string): string {
                       @for (item of employees(); track item.EmployeeUUID) {
                         <tr>
                           <td>{{ item.Name }}</td>
+                          <td>{{ item.RegistrationNumber || '—' }}</td>
                           <td>{{ item.CompanyName ?? '—' }}</td>
+                          <td>{{ item.LocationName || '—' }}</td>
                           <td>{{ item.DepartmentName ?? '—' }}</td>
                           <td>{{ item.PositionName ?? '—' }}</td>
                           <td>{{ (item.TimeClockStatus === 'active' ? 'hr.clockActive' : 'hr.clockNone') | transloco }}</td>
@@ -350,7 +357,7 @@ export function localDateTime(value: string | null, language: string): string {
                           <td>{{ day.HolidayName ?? ('hr.dayKinds.' + dayKind(day.DayKind) | transloco) }}</td>
                           <td>{{ hours(day.ExpectedMinutes) }}</td>
                           <td>{{ hours(day.WorkedMinutes) }}</td>
-                          <td [class.negative]="day.BalanceMinutes < 0">{{ hours(day.BalanceMinutes, true) }}</td>
+                          <td [class.negative]="(day.BalanceMinutes ?? 0) < 0">{{ hours(day.BalanceMinutes, true) }}</td>
                           <td>{{ day.PunchCount }}</td>
                           <td>
                             @for (flag of flagsOf(day); track flag) {

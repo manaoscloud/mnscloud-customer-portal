@@ -26,6 +26,9 @@ export type PrintDay = Record<string, unknown> & {
 export type PrintTimesheet = {
   days?: PrintDay[] | null;
   totals?: Record<string, unknown> | null;
+  /** `omitted`: minute fields and totals can be null (employee with another employment in the month). */
+  totalsScope?: 'employee' | 'omitted' | null;
+  totalsNotice?: string | null;
   header?: {
     employer?: { Name?: string | null; Document?: string | null; DocumentKind?: string | null } | null;
     employee?: {
@@ -34,6 +37,9 @@ export type PrintTimesheet = {
       HireDate?: string | null;
       PositionName?: string | null;
       DepartmentName?: string | null;
+      RegistrationNumber?: string | null;
+      LocationName?: string | null;
+      TerminationDate?: string | null;
     } | null;
     schedules?: PrintSchedule[] | null;
     period?: { From?: string | null; To?: string | null } | null;
@@ -110,6 +116,8 @@ export function buildTimesheetHtml(body: PrintTimesheet, t: Translate, language:
   const employee = header.employee ?? {};
   const days = body.days ?? [];
   const totals = body.totals ?? {};
+  const omitted = body.totalsScope === 'omitted';
+  const mt = (value: unknown, signed = false) => (omitted ? '—' : minutesText(value, signed));
   const e = escapeHtml;
   const dash = (value: unknown) => (value === null || value === undefined || value === '' ? '—' : e(value));
   const period = `${dateText(header.period?.From)} – ${dateText(header.period?.To)}`;
@@ -171,10 +179,10 @@ export function buildTimesheetHtml(body: PrintTimesheet, t: Translate, language:
       const overtime = (Number(day['OvertimeMinutes']) || 0) + (Number(day['OvertimeRestMinutes']) || 0);
       return (
         `<tr><td>${e(dateText(day.Date))}</td><td>${e(kindText)}</td><td>${marks.join(' ') || '—'}</td>` +
-        `<td class="n">${minutesText(day['ExpectedMinutes'])}</td><td class="n">${minutesText(day['WorkedMinutes'])}</td>` +
-        `<td class="n">${minutesText(overtime)}</td><td class="n">${minutesText(day['AbsenceMinutes'])}</td>` +
-        `<td class="n">${minutesText(day['LateMinutes'])}</td><td class="n">${minutesText(day['NightReducedMinutes'] ?? day['NightMinutes'])}</td>` +
-        `<td class="n">${minutesText(day['BalanceMinutes'], true)}</td><td>${e(flags)}</td></tr>`
+        `<td class="n">${mt(day['ExpectedMinutes'])}</td><td class="n">${mt(day['WorkedMinutes'])}</td>` +
+        `<td class="n">${mt(overtime)}</td><td class="n">${mt(day['AbsenceMinutes'])}</td>` +
+        `<td class="n">${mt(day['LateMinutes'])}</td><td class="n">${mt(day['NightReducedMinutes'] ?? day['NightMinutes'])}</td>` +
+        `<td class="n">${mt(day['BalanceMinutes'], true)}</td><td>${e(flags)}</td></tr>`
       );
     })
     .join('');
@@ -195,11 +203,14 @@ export function buildTimesheetHtml(body: PrintTimesheet, t: Translate, language:
 <tr><th>${e(t('hr.print.employee'))}</th><td>${dash(employee.Name)}</td><th>${e(t('hr.print.cpf'))}</th><td>${dash(employee.Document)}</td></tr>
 <tr><th>${e(t('hr.print.hireDate'))}</th><td>${employee.HireDate ? e(dateText(employee.HireDate)) : '—'}</td><th>${e(t('hr.print.position'))}</th><td>${dash(employee.PositionName)}</td></tr>
 <tr><th>${e(t('hr.print.period'))}</th><td>${e(period)}</td><th>${e(t('hr.print.department'))}</th><td>${dash(employee.DepartmentName)}</td></tr>
+<tr><th>${e(t('hr.print.registration'))}</th><td>${dash(employee.RegistrationNumber)}</td><th>${e(t('hr.print.location'))}</th><td>${dash(employee.LocationName)}</td></tr>
+${employee.TerminationDate ? `<tr><th>${e(t('hr.print.termination'))}</th><td>${e(dateText(employee.TerminationDate))}</td><th></th><td></td></tr>` : ''}
 </table>
 ${scheduleRows ? `<h2>${e(t('hr.print.schedules'))}</h2><table>${scheduleRows}</table>` : ''}
 <h2>${e(t('hr.print.days'))}</h2>
 <table><thead><tr>${headRow}</tr></thead><tbody>${dayRows}</tbody>
-<tfoot><tr><th colspan="3">${e(t('hr.print.totals'))}</th><th class="n">${minutesText(totals['ExpectedMinutes'])}</th><th class="n">${minutesText(totals['WorkedMinutes'])}</th><th class="n">${minutesText(totalOvertime)}</th><th class="n">${minutesText(totals['AbsenceMinutes'])}</th><th class="n">${minutesText(totals['LateMinutes'])}</th><th class="n">${minutesText(totals['NightReducedMinutes'] ?? totals['NightMinutes'])}</th><th class="n">${minutesText(totals['BalanceMinutes'], true)}</th><th></th></tr></tfoot></table>
+<tfoot><tr><th colspan="3">${e(t('hr.print.totals'))}</th><th class="n">${mt(totals['ExpectedMinutes'])}</th><th class="n">${mt(totals['WorkedMinutes'])}</th><th class="n">${mt(totalOvertime)}</th><th class="n">${mt(totals['AbsenceMinutes'])}</th><th class="n">${mt(totals['LateMinutes'])}</th><th class="n">${mt(totals['NightReducedMinutes'] ?? totals['NightMinutes'])}</th><th class="n">${mt(totals['BalanceMinutes'], true)}</th><th></th></tr></tfoot></table>
+${omitted ? `<p>${e(t('hr.print.totalsOmitted'))}</p>` : ''}
 ${legendHtml}
 <div class="foot"><span>${e(t('hr.print.issuedAt'))}: ${e(issued)}${header.Timezone ? ` (${e(header.Timezone)})` : ''}</span><span>${e(t('hr.print.period'))}: ${e(period)}</span></div>
 </body></html>`;
