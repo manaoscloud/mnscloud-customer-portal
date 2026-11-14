@@ -1,4 +1,4 @@
-import { buildTimesheetHtml, escapeHtml, minutesText, type PrintTimesheet } from './timesheet-print';
+import { buildTimesheetHtml, closingLines, escapeHtml, minutesText, type PrintTimesheet } from './timesheet-print';
 
 const t = (key: string) => `[${key}]`;
 
@@ -82,5 +82,41 @@ describe('timesheet print', () => {
   it('formats minutes', () => {
     expect(minutesText(75, true)).toBe('+1:15');
     expect(minutesText(undefined)).toBe('0:00');
+  });
+});
+
+describe('closing state', () => {
+  const tp = (key: string, params?: Record<string, unknown>) => `${key}${params ? JSON.stringify(params) : ''}`;
+  const closed = {
+    Status: 'closed', ClosedAt: '2026-11-02T12:00:00Z', DsrLostDays: 1, DsrLostHolidays: 0,
+    OvertimeMode: 'bank', BankCreditMinutes: 120, BankDebitMinutes: 30, BankPaidMinutes: 0, BankBalanceMinutes: 90,
+    Acknowledged: 0, AcknowledgedAt: null,
+  };
+
+  it('has no lines without a closing', () => {
+    expect(closingLines(null, tp, 'pt-BR')).toEqual([]);
+    expect(buildTimesheetHtml(body, t, 'pt-BR')).not.toContain('hr.closing.title');
+  });
+
+  it('shows pending acknowledgement, DSR and bank hh:mm', () => {
+    const lines = closingLines(closed, tp, 'pt-BR');
+    expect(lines[0]).toContain('hr.closing.closedAt');
+    expect(lines[0]).toContain('02/11/2026');
+    expect(lines[1]).toBe('hr.closing.pending');
+    expect(lines[2]).toContain('"days":1');
+    expect(lines[3]).toContain('"credit":"2:00"');
+    expect(lines[3]).toContain('"balance":"+1:30"');
+  });
+
+  it('shows the acknowledgement time and omits bank outside bank mode', () => {
+    const lines = closingLines({ ...closed, Acknowledged: 1, AcknowledgedAt: '2026-11-03T15:30:00Z', OvertimeMode: 'payment' }, tp, 'pt-BR');
+    expect(lines[1]).toContain('hr.closing.acknowledged');
+    expect(lines).toHaveLength(3);
+  });
+
+  it('prints the closing in the HTML header, escaped', () => {
+    const html = buildTimesheetHtml({ ...body, closing: closed }, (k) => `<${k}>`, 'pt-BR');
+    expect(html).toContain('&lt;hr.closing.title&gt;');
+    expect(html).toContain('class="closing"');
   });
 });

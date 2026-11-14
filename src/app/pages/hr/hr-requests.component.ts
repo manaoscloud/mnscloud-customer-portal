@@ -280,7 +280,13 @@ export class HrRequestsComponent {
       this.changed.emit();
       await this.load();
     } catch (error) {
-      this.feedback.set(error instanceof ApiError && error.status === 409 ? 'hr.requests.conflict' : 'hr.requests.error');
+      this.feedback.set(
+        error instanceof ApiError && error.code === 'HR_TIMESHEET_CLOSED'
+          ? 'hr.requests.monthClosed'
+          : error instanceof ApiError && error.status === 409
+            ? 'hr.requests.conflict'
+            : 'hr.requests.error',
+      );
       await this.load();
     } finally {
       this.busy.set(false);

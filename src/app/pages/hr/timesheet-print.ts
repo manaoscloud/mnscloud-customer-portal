@@ -23,7 +23,23 @@ export type PrintDay = Record<string, unknown> & {
   adjustments?: PrintAdjustment[] | null;
   Flags?: string[] | string | null;
 };
+/** Closing state of the month as the portal API returns it (read only). */
+export type PortalClosing = {
+  ClosingUUID?: string | null;
+  Status?: string | null;
+  ClosedAt?: string | null;
+  DsrLostDays?: number | string | null;
+  DsrLostHolidays?: number | string | null;
+  OvertimeMode?: string | null;
+  BankCreditMinutes?: number | string | null;
+  BankDebitMinutes?: number | string | null;
+  BankPaidMinutes?: number | string | null;
+  BankBalanceMinutes?: number | string | null;
+  Acknowledged?: boolean | number | string | null;
+  AcknowledgedAt?: string | null;
+};
 export type PrintTimesheet = {
+  closing?: PortalClosing | null;
   days?: PrintDay[] | null;
   totals?: Record<string, unknown> | null;
   /** `omitted`: minute fields and totals can be null (employee with another employment in the month). */
@@ -82,6 +98,41 @@ function issuedText(value: string | null | undefined, timezone: string | null | 
   } catch {
     return new Intl.DateTimeFormat(language, options).format(date);
   }
+}
+
+/** Date (and optionally time) of an instant in the viewer's locale; '—' when unparseable. */
+export function stampText(value: string | null | undefined, language: string, withTime: boolean): string {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '—';
+  const date = new Date(/^\d{4}-\d{2}-\d{2} \d/.test(raw) ? raw.replace(' ', 'T') : raw);
+  if (Number.isNaN(date.getTime())) return '—';
+  return new Intl.DateTimeFormat(language, withTime ? { dateStyle: 'short', timeStyle: 'short' } : { dateStyle: 'short' }).format(date);
+}
+
+/** Plain-text lines of the closing state (empty when the month is not closed); not yet escaped. */
+export function closingLines(closing: PortalClosing | null | undefined, t: Translate, language: string): string[] {
+  if (!closing || String(closing.Status ?? 'closed') !== 'closed') return [];
+  const acknowledged = closing.Acknowledged === true || Number(closing.Acknowledged) === 1 || closing.Acknowledged === 'true';
+  const lines = [
+    t('hr.closing.closedAt', { date: stampText(closing.ClosedAt, language, false) }),
+    acknowledged
+      ? t('hr.closing.acknowledged', { date: stampText(closing.AcknowledgedAt, language, true) })
+      : t('hr.closing.pending'),
+  ];
+  const lostDays = Number(closing.DsrLostDays) || 0;
+  const lostHolidays = Number(closing.DsrLostHolidays) || 0;
+  lines.push(t('hr.closing.dsr', { days: lostDays, holidays: lostHolidays }));
+  if (closing.OvertimeMode === 'bank') {
+    lines.push(
+      t('hr.closing.bank', {
+        credit: minutesText(closing.BankCreditMinutes),
+        debit: minutesText(closing.BankDebitMinutes),
+        paid: minutesText(closing.BankPaidMinutes),
+        balance: minutesText(closing.BankBalanceMinutes, true),
+      }),
+    );
+  }
+  return lines;
 }
 
 const KINDS = ['work', 'off', 'holiday', 'no_schedule'];
@@ -194,6 +245,10 @@ export function buildTimesheetHtml(body: PrintTimesheet, t: Translate, language:
   const legendHtml = legend.length
     ? `<h2>${e(t('hr.print.legend'))}</h2><p>${e(t('hr.print.legendText'))}</p><table><tr><th>${e(t('hr.date'))}</th><th></th><th>${e(t('hr.print.time'))}</th><th>${e(t('hr.print.type'))}</th><th>${e(t('hr.print.reason'))}</th></tr>${legend.join('')}</table>`
     : '';
+  const closingRows = closingLines(body.closing, t, language);
+  const closingHtml = closingRows.length
+    ? `<h2>${e(t('hr.closing.title'))}</h2><ul class="closing">${closingRows.map((line) => `<li>${e(line)}</li>`).join('')}</ul>`
+    : '';
   const title = t('hr.print.title');
   const issued = header.IssuedAtLocal || issuedText(header.IssuedAt, header.Timezone, language);
   return `<!doctype html><html lang="${e(language)}"><head><meta charset="utf-8"><title>${e(title)}</title><style>${STYLE}</style></head><body>
@@ -210,6 +265,7 @@ ${scheduleRows ? `<h2>${e(t('hr.print.schedules'))}</h2><table>${scheduleRows}</
 <h2>${e(t('hr.print.days'))}</h2>
 <table><thead><tr>${headRow}</tr></thead><tbody>${dayRows}</tbody>
 <tfoot><tr><th colspan="3">${e(t('hr.print.totals'))}</th><th class="n">${mt(totals['ExpectedMinutes'])}</th><th class="n">${mt(totals['WorkedMinutes'])}</th><th class="n">${mt(totalOvertime)}</th><th class="n">${mt(totals['AbsenceMinutes'])}</th><th class="n">${mt(totals['LateMinutes'])}</th><th class="n">${mt(totals['NightReducedMinutes'] ?? totals['NightMinutes'])}</th><th class="n">${mt(totals['BalanceMinutes'], true)}</th><th></th></tr></tfoot></table>
+${closingHtml}
 ${omitted ? `<p>${e(t('hr.print.totalsOmitted'))}</p>` : ''}
 ${legendHtml}
 <div class="foot"><span>${e(t('hr.print.issuedAt'))}: ${e(issued)}${header.Timezone ? ` (${e(header.Timezone)})` : ''}</span><span>${e(t('hr.print.period'))}: ${e(period)}</span></div>
