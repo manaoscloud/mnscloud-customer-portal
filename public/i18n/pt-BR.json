@@ -860,6 +860,7 @@
   "hr.kiosks.states.revoked": "Revogado",
   "hr.requests.status": "Situação",
   "hr.requests.all": "Todas",
+  "hr.requests.monthClosed": "Mês fechado: o RH precisa reabrir o fechamento para alterar.",
   "hr.requests.error": "Não foi possível concluir. Tente novamente.",
   "hr.requests.empty": "Nenhuma solicitação para você decidir.",
   "hr.requests.reason": "Motivo",

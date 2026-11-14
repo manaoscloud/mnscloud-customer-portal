@@ -554,6 +554,7 @@ export class HrPageComponent {
       this.days.set(response.data?.items ?? []);
       this.closing.set(response.data?.closing ?? null);
     } catch {
+      this.closing.set(null);
       this.error.set(true);
     }
   }

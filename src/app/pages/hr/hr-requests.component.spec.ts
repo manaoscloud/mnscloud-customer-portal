@@ -98,5 +98,9 @@ describe('HR portal requests', () => {
       { decision: 'approve', note: null, revision: 3 },
     ]);
     expect(component.feedback()).toBe('hr.requests.conflict');
+
+    refuse = new ApiError('closed', 409, 'HR_TIMESHEET_CLOSED');
+    await component.decide(component.items()[0], 'approve');
+    expect(component.feedback()).toBe('hr.requests.monthClosed');
   });
 });

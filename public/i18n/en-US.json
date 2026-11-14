@@ -860,6 +860,7 @@
   "hr.kiosks.states.revoked": "Revoked",
   "hr.requests.status": "Status",
   "hr.requests.all": "All",
+  "hr.requests.monthClosed": "Month closed: HR must reopen the closing before this can be changed.",
   "hr.requests.error": "It could not be completed. Try again.",
   "hr.requests.empty": "No requests for you to decide.",
   "hr.requests.reason": "Reason",
