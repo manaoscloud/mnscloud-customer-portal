@@ -9,7 +9,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ApiService } from '../../services/api.service';
 import type { ApiEnvelope } from '../../models/session.model';
 import { HrRequestsComponent } from './hr-requests.component';
-import { buildTimesheetHtml, printHtml, type PrintTimesheet } from './timesheet-print';
+import { buildTimesheetHtml, closingLines, printHtml, type PortalClosing, type PrintTimesheet } from './timesheet-print';
 
 export type HrAccount = {
   HraUUID: string;
@@ -369,6 +369,14 @@ export function localDateTime(value: string | null, language: string): string {
                     </tbody>
                   </table>
                 </div>
+                @if (closingText().length > 0) {
+                  <div class="card closing" data-testid="hr-closing">
+                    <strong>{{ 'hr.closing.title' | transloco }}</strong>
+                    @for (line of closingText(); track line) {
+                      <p>{{ line }}</p>
+                    }
+                  </div>
+                }
                 <p class="hint">{{ 'hr.timesheetHint' | transloco }}</p>
               }
             }
@@ -397,6 +405,7 @@ export function localDateTime(value: string | null, language: string): string {
     th, td { padding: 8px 12px; text-align: start; border-bottom: 1px solid var(--border-color, #eee); white-space: nowrap; }
     .negative { color: var(--error, #b3261e); }
     .badge { display: inline-block; margin: 2px 4px 2px 0; padding: 2px 8px; border-radius: 999px; font-size: 0.8rem; background: var(--surface-container, rgba(0, 0, 0, 0.05)); }
+    .closing p { margin: 4px 0 0; }
     .hint { margin-top: 8px; font-size: 0.85rem; color: var(--text-secondary, #666); }
   `],
 })
@@ -425,6 +434,10 @@ export class HrPageComponent {
   readonly employee = signal<string | null>(null);
   readonly month = signal(new Date().toISOString().slice(0, 7));
   readonly days = signal<Day[]>([]);
+  readonly closing = signal<PortalClosing | null>(null);
+  readonly closingText = computed(() => {
+    return closingLines(this.closing(), (key, params) => this.transloco.translate(key, params), this.transloco.getActiveLang());
+  });
   readonly kiosks = signal<Kiosk[]>([]);
   readonly tabs = computed(() => {
     const account = this.account();
@@ -531,13 +544,15 @@ export class HrPageComponent {
     const employee = this.employee();
     if (!employee) {
       this.days.set([]);
+      this.closing.set(null);
       return;
     }
     const { from, to } = monthRange(this.month());
     const query = new URLSearchParams({ employeeUUID: employee, from, to });
     try {
-      const response = await this.api.get<ApiEnvelope<{ items: Day[] }>>(`${this.base()}/timesheets?${query}`);
+      const response = await this.api.get<ApiEnvelope<{ items: Day[]; closing?: PortalClosing | null }>>(`${this.base()}/timesheets?${query}`);
       this.days.set(response.data?.items ?? []);
+      this.closing.set(response.data?.closing ?? null);
     } catch {
       this.error.set(true);
     }
