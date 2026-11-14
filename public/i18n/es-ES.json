@@ -464,6 +464,7 @@
   "hr.closing.pending": "Conocimiento del colaborador: pendiente",
   "hr.closing.dsr": "Descanso semanal remunerado perdido: {{days}} semana(s), {{holidays}} feriado(s) en esas semanas",
   "hr.closing.bank": "Banco de horas: crédito {{credit}}, débito {{debit}}, pagado {{paid}}, saldo {{balance}}",
+  "hr.closing.compensated": "Horas compensadas en el mes: {{minutes}}",
   "hr.timesheetHint": "Horas en h:mm, calculadas por su proveedor a partir de los fichajes; los tratamientos y ajustes los realiza su proveedor.",
   "nav.infragis": "Mapa de activos",
   "infragis.title": "Mapa de activos",

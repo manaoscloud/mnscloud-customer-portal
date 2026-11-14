@@ -464,6 +464,7 @@
   "hr.closing.pending": "Employee acknowledgement: pending",
   "hr.closing.dsr": "Paid weekly rest lost: {{days}} week(s), {{holidays}} holiday(s) in those weeks",
   "hr.closing.bank": "Hour bank: credit {{credit}}, debit {{debit}}, paid {{paid}}, balance {{balance}}",
+  "hr.closing.compensated": "Compensated hours in the month: {{minutes}}",
   "hr.timesheetHint": "Hours in h:mm, computed by your provider from the punches; treatments and adjustments are made by your provider.",
   "nav.infragis": "Asset map",
   "infragis.title": "Asset map",

@@ -35,6 +35,9 @@ export type PortalClosing = {
   BankDebitMinutes?: number | string | null;
   BankPaidMinutes?: number | string | null;
   BankBalanceMinutes?: number | string | null;
+  /** Minutes compensated in the month (absent/0 on older APIs). */
+  CompensatedMinutes?: number | string | null;
+  BankAgreement?: 'individual' | 'collective' | null;
   Acknowledged?: boolean | number | string | null;
   AcknowledgedAt?: string | null;
 };
@@ -131,6 +134,9 @@ export function closingLines(closing: PortalClosing | null | undefined, t: Trans
         balance: minutesText(closing.BankBalanceMinutes, true),
       }),
     );
+  }
+  if (closing.OvertimeMode === 'compensation') {
+    lines.push(t('hr.closing.compensated', { minutes: minutesText(closing.CompensatedMinutes) }));
   }
   return lines;
 }
