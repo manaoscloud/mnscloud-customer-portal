@@ -114,6 +114,15 @@ describe('closing state', () => {
     expect(lines).toHaveLength(3);
   });
 
+  it('shows compensated hours in compensation mode, tolerating a missing field', () => {
+    const comp = { ...closed, OvertimeMode: 'compensation', CompensatedMinutes: 135, BankAgreement: null };
+    const lines = closingLines(comp, tp, 'pt-BR');
+    expect(lines).toHaveLength(4);
+    expect(lines[3]).toBe('hr.closing.compensated{"minutes":"2:15"}');
+    const old = closingLines({ ...comp, CompensatedMinutes: undefined }, tp, 'pt-BR');
+    expect(old[3]).toBe('hr.closing.compensated{"minutes":"0:00"}');
+  });
+
   it('prints the closing in the HTML header, escaped', () => {
     const html = buildTimesheetHtml({ ...body, closing: closed }, (k) => `<${k}>`, 'pt-BR');
     expect(html).toContain('&lt;hr.closing.title&gt;');
