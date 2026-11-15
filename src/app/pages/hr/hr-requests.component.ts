@@ -12,7 +12,7 @@ import type { ApiEnvelope } from '../../models/session.model';
 export type HrRequest = {
   RequestUUID: string;
   RequestID: string;
-  Type: 'missing_punch' | 'punch_contest' | 'absence';
+  Type: 'missing_punch' | 'punch_contest' | 'absence' | 'shift_swap';
   Status: 'pending' | 'approved' | 'rejected' | 'cancelled';
   EmployeeName: string;
   DepartmentName: string | null;
@@ -27,6 +27,11 @@ export type HrRequest = {
   AttachmentFileName: string | null;
   Reason: string;
   DecisionNote: string | null;
+  PeerEmployeeUUID?: string | null;
+  PeerEmployeeName?: string | null;
+  SwapDate?: string | null;
+  PeerStatus?: 'pending' | 'accepted' | 'refused' | null;
+  PeerDecidedAt?: string | null;
   CanDecide: boolean;
   MessageCount: number;
   Revision: number;
@@ -89,6 +94,16 @@ export function day(value: string | null): string {
               <dl>
                 <dt>{{ 'hr.requests.reason' | transloco }}</dt>
                 <dd>{{ item.Reason }}</dd>
+                @if (item.Type === 'shift_swap') {
+                  <dt>{{ 'hr.requests.swap.colleague' | transloco }}</dt>
+                  <dd>{{ item.PeerEmployeeName ?? '—' }}</dd>
+                  <dt>{{ 'hr.requests.swap.myDate' | transloco }}</dt>
+                  <dd>{{ day(item.Date) }}</dd>
+                  <dt>{{ 'hr.requests.swap.theirDate' | transloco }}</dt>
+                  <dd>{{ day(item.SwapDate ?? item.Date) }}</dd>
+                  <dt>{{ 'hr.requests.swap.peerStatus' | transloco }}</dt>
+                  <dd>{{ 'hr.requests.swap.status.' + (item.PeerStatus ?? 'pending') | transloco }}@if (item.PeerDecidedAt) { · {{ localInstant(item.PeerDecidedAt) }}}</dd>
+                }
                 @if (item.DepartmentName) {
                   <dt>{{ 'hr.department' | transloco }}</dt>
                   <dd>{{ item.DepartmentName }}</dd>
@@ -134,10 +149,13 @@ export function day(value: string | null): string {
                     <button matButton="outlined" type="button" [disabled]="busy() || !note.trim()" (click)="decide(item, 'reject')">
                       {{ 'hr.requests.reject' | transloco }}
                     </button>
-                    <button matButton="filled" type="button" [disabled]="busy()" (click)="decide(item, 'approve')">
+                    <button matButton="filled" type="button" [disabled]="busy() || waitsPeer(item)" (click)="decide(item, 'approve')">
                       {{ 'hr.requests.approve' | transloco }}
                     </button>
                   </div>
+                  @if (waitsPeer(item)) {
+                    <p class="hint">{{ 'hr.requests.swap.waitPeer' | transloco }}</p>
+                  }
                 </div>
               }
               @if (feedback()) {
@@ -183,6 +201,7 @@ export class HrRequestsComponent {
   readonly changed = output<void>();
   readonly statuses = STATUSES;
   readonly localInstant = localInstant;
+  readonly day = day;
   readonly items = signal<HrRequest[]>([]);
   readonly status = signal<string>('pending');
   readonly selected = signal<string | null>(null);
@@ -218,7 +237,18 @@ export class HrRequestsComponent {
     }
   }
 
+  /** A swap is approved only after the colleague accepted it. */
+  waitsPeer(item: HrRequest): boolean {
+    return item.Type === 'shift_swap' && item.PeerStatus !== 'accepted';
+  }
+
   detail(item: HrRequest): string {
+    if (item.Type === 'shift_swap') {
+      const mine = day(item.Date);
+      const theirs = day(item.SwapDate ?? item.Date);
+      const name = item.PeerEmployeeName ? `${item.PeerEmployeeName} · ` : '';
+      return mine === theirs ? `${name}${mine}` : `${name}${mine} ⇄ ${theirs}`;
+    }
     if (item.Type === 'absence') {
       const range = item.EndDate && item.EndDate !== item.Date ? `${day(item.Date)} – ${day(item.EndDate)}` : day(item.Date);
       return range;
@@ -283,7 +313,13 @@ export class HrRequestsComponent {
       this.feedback.set(
         error instanceof ApiError && error.code === 'HR_TIMESHEET_CLOSED'
           ? 'hr.requests.monthClosed'
-          : error instanceof ApiError && error.status === 409
+          : error instanceof ApiError && error.code === 'HR_SWAP_PEER_PENDING'
+            ? 'hr.requests.swap.peerPending'
+            : error instanceof ApiError && error.code === 'HR_SWAP_NOT_ALLOWED'
+              ? 'hr.requests.swap.notAllowed'
+              : error instanceof ApiError && error.code === 'HR_SCHEDULE_SCOPE_FORBIDDEN'
+                ? 'hr.requests.swap.scopeForbidden'
+                : error instanceof ApiError && error.status === 409
             ? 'hr.requests.conflict'
             : 'hr.requests.error',
       );

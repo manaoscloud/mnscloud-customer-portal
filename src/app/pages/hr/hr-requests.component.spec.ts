@@ -103,4 +103,47 @@ describe('HR portal requests', () => {
     await component.decide(component.items()[0], 'approve');
     expect(component.feedback()).toBe('hr.requests.monthClosed');
   });
+
+  it('shows a shift swap with the colleague and blocks approval until the colleague accepts', async () => {
+    const swap = {
+      ...request,
+      RequestUUID: 'S1',
+      Type: 'shift_swap',
+      Date: '2026-12-01',
+      SwapDate: '2026-12-03',
+      PeerEmployeeName: 'JOAO',
+      PeerStatus: 'pending',
+      PeerDecidedAt: null,
+    };
+    const api = TestBed.inject(ApiService) as unknown as { get: (url: string) => Promise<unknown> };
+    api.get = async (url: string) => ({ data: { items: url.includes('/messages') ? [] : [swap] } });
+    const fixture = TestBed.createComponent(HrRequestsComponent);
+    fixture.componentRef.setInput('account', 'A1');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const component = fixture.componentInstance;
+    expect(component.detail(swap as never)).toBe('JOAO · 01/12/2026 ⇄ 03/12/2026');
+    expect(component.waitsPeer(swap as never)).toBe(true);
+    expect(component.waitsPeer({ ...swap, PeerStatus: 'accepted' } as never)).toBe(false);
+
+    await component.toggle(component.items()[0]);
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Shift swap');
+    expect(text).toContain('Awaiting colleague');
+    const approve = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Approve',
+    );
+    expect(approve?.disabled).toBe(true);
+
+    for (const [code, key] of [
+      ['HR_SWAP_PEER_PENDING', 'hr.requests.swap.peerPending'],
+      ['HR_SWAP_NOT_ALLOWED', 'hr.requests.swap.notAllowed'],
+      ['HR_SCHEDULE_SCOPE_FORBIDDEN', 'hr.requests.swap.scopeForbidden'],
+    ] as const) {
+      refuse = new ApiError('refused', code === 'HR_SCHEDULE_SCOPE_FORBIDDEN' ? 403 : 409, code);
+      await component.decide(component.items()[0], 'approve');
+      expect(component.feedback()).toBe(key);
+    }
+  });
 });
