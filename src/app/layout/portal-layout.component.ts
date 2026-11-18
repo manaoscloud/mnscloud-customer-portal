@@ -32,6 +32,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
       { path: '/dns', icon: 'shield', label: 'nav.dns' },
       { path: '/logs', icon: 'receipt_long', label: 'nav.logs' },
       { path: '/hr', icon: 'badge', label: 'nav.hr' },
+      { path: '/pos', icon: 'point_of_sale', label: 'nav.pos' },
       { path: '/infragis', icon: 'map', label: 'nav.infragis' },
       { path: '/authentication', icon: 'router', label: 'nav.authentication' },
       { path: '/vps', icon: 'dns', label: 'nav.vps' },

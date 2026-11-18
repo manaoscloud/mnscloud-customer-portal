@@ -1241,5 +1241,16 @@
   "smtp.status.failed": "Falló",
   "smtp.status.bounced": "Rebotado",
   "smtp.status.complained": "Queja",
-  "smtp.status.rejected": "Rechazado"
+  "smtp.status.rejected": "Rechazado",
+  "nav.pos": "Caja",
+  "pos.title": "Caja",
+  "pos.loading": "Cargando cajas...",
+  "pos.openError": "No se pudo abrir la caja. Inténtelo de nuevo.",
+  "pos.error": "No se pudieron cargar las cajas. Inténtelo más tarde.",
+  "pos.empty": "Ninguna caja disponible para su acceso.",
+  "pos.hint": "La caja se abre en una nueva pestaña con el operador vinculado a su acceso.",
+  "pos.operator": "Opera como {{ name }}",
+  "pos.cashOpen": "Caja abierta",
+  "pos.open": "Abrir caja",
+  "pos.description": "Cajas que su acceso puede abrir."
 }
