@@ -42,6 +42,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
       { path: '/security', icon: 'security', label: 'nav.security' },
       { path: '/services', icon: 'dns', label: 'nav.services' },
       { path: '/support', icon: 'support_agent', label: 'nav.support' },
+      { path: '/managed-support', icon: 'router', label: 'nav.managedSupport' },
     ],
   },
   {
