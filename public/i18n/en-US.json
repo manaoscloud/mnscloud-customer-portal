@@ -1273,5 +1273,16 @@
   "smtp.status.failed": "Failed",
   "smtp.status.bounced": "Bounced",
   "smtp.status.complained": "Complaint",
-  "smtp.status.rejected": "Rejected"
+  "smtp.status.rejected": "Rejected",
+  "nav.pos": "Point of sale",
+  "pos.title": "Point of sale",
+  "pos.loading": "Loading terminals...",
+  "pos.openError": "Could not open the point of sale. Try again.",
+  "pos.error": "Could not load the terminals. Try again later.",
+  "pos.empty": "No point of sale available for your login.",
+  "pos.hint": "The point of sale opens in a new tab with the operator linked to your login.",
+  "pos.operator": "Operates as {{ name }}",
+  "pos.cashOpen": "Cash open",
+  "pos.open": "Open point of sale",
+  "pos.description": "Point of sale terminals your login may open."
 }

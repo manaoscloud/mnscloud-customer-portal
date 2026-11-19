@@ -1273,5 +1273,16 @@
   "smtp.status.failed": "Falhou",
   "smtp.status.bounced": "Devolvida",
   "smtp.status.complained": "Reclamação",
-  "smtp.status.rejected": "Rejeitada"
+  "smtp.status.rejected": "Rejeitada",
+  "nav.pos": "Caixa",
+  "pos.title": "Caixa",
+  "pos.loading": "Carregando caixas...",
+  "pos.openError": "Não foi possível abrir o caixa. Tente novamente.",
+  "pos.error": "Não foi possível carregar os caixas. Tente novamente mais tarde.",
+  "pos.empty": "Nenhum caixa disponível para o seu login.",
+  "pos.hint": "O caixa abre em uma nova aba com o operador vinculado ao seu login.",
+  "pos.operator": "Opera como {{ name }}",
+  "pos.cashOpen": "Caixa aberto",
+  "pos.open": "Abrir caixa",
+  "pos.description": "Caixas que o seu login pode abrir."
 }
