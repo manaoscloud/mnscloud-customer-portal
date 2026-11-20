@@ -113,6 +113,8 @@
   "services.cycle.quarterly": "/trimestre",
   "services.cycle.semiannual": "/semestre",
   "services.cycle.yearly": "/ano",
+  "services.cycle.biennial": "/2 anos",
+  "services.cycle.triennial": "/3 anos",
   "services.orderStatus.awaiting_approval": "Aguardando aprovação",
   "services.orderStatus.awaiting_payment": "Aguardando pagamento",
   "services.orderStatus.paid": "Pago, em ativação",
