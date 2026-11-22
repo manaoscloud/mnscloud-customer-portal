@@ -163,12 +163,43 @@ type NetworkFinding = {
   firmwareVersion: string | null;
   fixedVersion: string | null;
 };
+/** E4: a patch campaign that reached servers of the account (read-only). */
+export type PatchCampaignServer = {
+  serverUUID: string;
+  serverName: string;
+  state: string;
+  wave: number | null;
+  updatedCount: number | null;
+  rebootScheduled: number | boolean | null;
+  finishedAt: string | null;
+};
+export type PatchCampaign = {
+  campaignUUID: string;
+  code: string;
+  kind: 'patch' | 'reboot';
+  scope: string;
+  priority: string | null;
+  cves: string[] | null;
+  mode: string;
+  status: string;
+  createdAt: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  serverCount: number;
+  success: number;
+  partial: number;
+  nothing: number;
+  failed: number;
+  pending: number;
+  servers: PatchCampaignServer[] | null;
+};
 export type SecurityTab =
   | 'dashboard'
   | 'servers'
   | 'hardening'
   | 'threats'
   | 'vulnerabilities'
+  | 'patches'
   | 'network'
   | 'report'
   | 'secrets';
@@ -179,6 +210,7 @@ const TABS: readonly [SecurityTab, keyof SecurityAccount, string][] = [
   ['hardening', 'Servers', 'rule'],
   ['threats', 'Threats', 'gpp_maybe'],
   ['vulnerabilities', 'Vulnerabilities', 'bug_report'],
+  ['patches', 'Vulnerabilities', 'healing'],
   ['network', 'Vulnerabilities', 'router'],
   ['report', 'Vulnerabilities', 'summarize'],
   ['secrets', 'Secrets', 'key'],
@@ -306,6 +338,8 @@ const KNOWN = {
   severity: ['high', 'medium', 'low'],
   check: ['pass', 'fail', 'not_applicable', 'error'],
   secret: ['generic', 'runtime_env', 'api_token', 'password', 'certificate', 'ssh_key', 'database'],
+  campaign: ['running', 'paused', 'halted', 'aborted', 'completed'],
+  campaignRun: ['waiting', 'running', 'success', 'partial', 'nothing', 'failed', 'cancelled'],
 } as const;
 /** A revealed value disappears from the screen after this many milliseconds. */
 export const REVEAL_VISIBLE_MS = 60_000;
@@ -314,6 +348,14 @@ export const REVEAL_VISIBLE_MS = 60_000;
 export function stateKey(kind: keyof typeof KNOWN, value: string | null | undefined): string {
   const known = KNOWN[kind] as readonly string[];
   return `security.states.${kind}.${value && known.includes(value) ? value : 'other'}`;
+}
+
+/** What a campaign targeted, in words: the CVEs, a priority or every pending update. */
+export function campaignTarget(item: Pick<PatchCampaign, 'kind' | 'scope' | 'priority' | 'cves'>): string {
+  if (item.kind === 'reboot') return 'security.campaignTarget.reboot';
+  if (item.scope === 'cves' && item.cves?.length) return item.cves.join(', ');
+  if (item.scope === 'priority' && item.priority) return `security.campaignTarget.priority.${item.priority}`;
+  return item.scope === 'selection' ? 'security.campaignTarget.selection' : 'security.campaignTarget.all';
 }
 
 /** Whether the customer may ask to lift this block now. */
@@ -737,6 +779,52 @@ export function canRequestUnblock(account: SecurityAccount | null, block: Block)
                 </article>
               }
             }
+            @case ('patches') {
+              <p class="hint">{{ 'security.patchesHelp' | transloco }}</p>
+              @if (campaigns().length === 0) {
+                <p class="card">{{ 'security.emptyPatches' | transloco }}</p>
+              } @else {
+                @for (item of campaigns(); track item.campaignUUID) {
+                  <section class="card">
+                    <h2>
+                      {{ item.code }} · {{ campaignTarget(item).startsWith('security.') ? (campaignTarget(item) | transloco) : campaignTarget(item) }}
+                      <span class="badge">{{ stateKey('campaign', item.status) | transloco }}</span>
+                    </h2>
+                    <p class="hint">
+                      {{ 'security.campaignMode.' + (item.mode === 'immediate' ? 'immediate' : 'window') | transloco }} ·
+                      {{ when(item.startedAt ?? item.createdAt) }}@if (item.finishedAt) { → {{ when(item.finishedAt) }} }
+                    </p>
+                    <p>
+                      {{ 'security.campaignCounts' | transloco: { servers: item.serverCount, success: item.success, partial: item.partial, failed: item.failed, pending: item.pending } }}
+                    </p>
+                    <div class="table-wrap">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th scope="col">{{ 'security.server' | transloco }}</th>
+                            <th scope="col">{{ 'security.campaignResult' | transloco }}</th>
+                            <th scope="col">{{ 'security.updatedPackages' | transloco }}</th>
+                            <th scope="col">{{ 'security.rebootScheduled' | transloco }}</th>
+                            <th scope="col">{{ 'security.finishedAt' | transloco }}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (server of item.servers ?? []; track server.serverUUID) {
+                            <tr>
+                              <td>{{ server.serverName }}</td>
+                              <td><span class="badge">{{ stateKey('campaignRun', server.state) | transloco }}</span></td>
+                              <td>{{ server.updatedCount ?? 0 }}</td>
+                              <td>{{ (flag(server.rebootScheduled) ? 'security.yes' : 'security.no') | transloco }}</td>
+                              <td>{{ when(server.finishedAt) }}</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                }
+              }
+            }
             @case ('network') {
               @if (networkDevices().length === 0) {
                 <p class="card">{{ 'security.emptyNetwork' | transloco }}</p>
@@ -1074,6 +1162,12 @@ export class SecurityPageComponent {
   readonly hardening = signal<HardeningServer[]>([]);
   readonly networkDevices = signal<NetworkDevice[]>([]);
   readonly networkFindings = signal<NetworkFinding[]>([]);
+  readonly campaigns = signal<PatchCampaign[]>([]);
+  readonly campaignTarget = campaignTarget;
+
+  flag(value: unknown): boolean {
+    return value === true || Number(value) === 1;
+  }
   readonly alerts = signal<Alert[]>([]);
   readonly alertStatus = signal('');
   readonly alertOffset = signal(0);
@@ -1161,6 +1255,10 @@ export class SecurityPageComponent {
         await Promise.all([this.loadAlerts(0), this.loadBlocks()]);
       } else if (tab === 'vulnerabilities') {
         await this.loadFindings(0);
+      } else if (tab === 'patches') {
+        this.campaigns.set(
+          (await this.api.get<ApiEnvelope<{ items: PatchCampaign[] }>>(`${this.base()}/patch-campaigns?limit=50`)).data?.items ?? [],
+        );
       } else if (tab === 'report') {
         await this.loadReport();
       } else {
