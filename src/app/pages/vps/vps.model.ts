@@ -279,6 +279,8 @@ export type VpsVpn = {
   HvcDateChecked: string | null;
   RemotePrefixes: string | null;
   LocalNetworkCidrs: string | null;
+  /** 1 when the user has the key rule (hosting.vps.vpn.secret). */
+  CanRevealKey?: number | null;
 };
 
 export const VPN_VENDORS: readonly VpsVpnVendor[] = [

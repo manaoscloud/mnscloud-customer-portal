@@ -133,15 +133,17 @@ export const PSK_VISIBLE_MS = 10_000;
               }
 
               <div class="actions">
-                <button
-                  matButton="outlined"
-                  type="button"
-                  [disabled]="busy() === vpn.HvcUUID"
-                  (click)="reveal(vpn)"
-                >
-                  <mat-icon>key</mat-icon>
-                  {{ 'vps.vpn.reveal' | transloco }}
-                </button>
+                @if (vpn.CanRevealKey === 1) {
+                  <button
+                    matButton="outlined"
+                    type="button"
+                    [disabled]="busy() === vpn.HvcUUID"
+                    (click)="reveal(vpn)"
+                  >
+                    <mat-icon>key</mat-icon>
+                    {{ 'vps.vpn.reveal' | transloco }}
+                  </button>
+                }
                 <button
                   matButton="filled"
                   type="button"

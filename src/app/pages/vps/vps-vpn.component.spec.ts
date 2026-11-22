@@ -8,6 +8,7 @@ import { bytesLabel, vpnState, type VpsVpn } from './vps.model';
 
 const VPN: VpsVpn = {
   HvcUUID: 'vpn-1',
+  CanRevealKey: 1,
   HvcName: 'HQ',
   HpiAddress: '198.51.100.9',
   HvcRemoteAddress: null,
