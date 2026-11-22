@@ -1,4 +1,5 @@
 import {
+  campaignTarget,
   antivirusName,
   CHECK_CODES,
   checkKey,
@@ -18,6 +19,14 @@ const block = (requestStatus: string | null) =>
   ({ uuid: 'b', value: '198.51.100.9', action: 'ban', scenario: null, expiresAt: null, serverName: null, requestStatus });
 
 describe('Security portal page helpers', () => {
+  it('describes what a patch campaign targeted', () => {
+    expect(campaignTarget({ kind: 'reboot', scope: 'all', priority: null, cves: null })).toBe('security.campaignTarget.reboot');
+    expect(campaignTarget({ kind: 'patch', scope: 'cves', priority: null, cves: ['CVE-1', 'CVE-2'] })).toBe('CVE-1, CVE-2');
+    expect(campaignTarget({ kind: 'patch', scope: 'priority', priority: 'kev', cves: null })).toBe('security.campaignTarget.priority.kev');
+    expect(campaignTarget({ kind: 'patch', scope: 'selection', priority: null, cves: null })).toBe('security.campaignTarget.selection');
+    expect(campaignTarget({ kind: 'patch', scope: 'all', priority: null, cves: null })).toBe('security.campaignTarget.all');
+  });
+
   it('translates known server states and falls back for unknown ones', () => {
     expect(stateKey('protection', 'partial')).toBe('security.states.protection.partial');
     expect(stateKey('alert', 'deleted')).toBe('security.states.alert.other');
