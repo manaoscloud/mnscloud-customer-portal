@@ -249,3 +249,72 @@ export function parseSources(text: string): string[] {
 export function blocksAllInbound(rules: VpsFirewallRule[]): boolean {
   return !rules.some((rule) => rule.Direction === 'in' && rule.Action === 'allow');
 }
+
+export type VpsVpnState = 'down' | 'connecting' | 'established';
+export type VpsVpnVendor =
+  | 'generic'
+  | 'mikrotik7'
+  | 'mikrotik6'
+  | 'fortinet'
+  | 'pfsense'
+  | 'cisco'
+  | 'huawei';
+
+/** Site-to-site VPN connection the provider published to the customer (read only). */
+export type VpsVpn = {
+  HvcUUID: string;
+  HvcName: string;
+  HpiAddress: string | null;
+  HvcRemoteAddress: string | null;
+  HvcRemoteId: string | null;
+  HvcLocalId: string | null;
+  HvcProfile: 'recommended' | 'compatible' | 'performance';
+  HvcStartAction: 'start' | 'on_demand' | 'responder';
+  HvcMtu: number | null;
+  HvcDpdSeconds: number | null;
+  HvcTunnelState: VpsVpnState | null;
+  HvcDateEstablished: string | null;
+  HvcBytesIn: number | string | null;
+  HvcBytesOut: number | string | null;
+  HvcDateChecked: string | null;
+  RemotePrefixes: string | null;
+  LocalNetworkCidrs: string | null;
+};
+
+export const VPN_VENDORS: readonly VpsVpnVendor[] = [
+  'mikrotik7',
+  'mikrotik6',
+  'fortinet',
+  'pfsense',
+  'cisco',
+  'huawei',
+  'generic',
+];
+
+/** Unknown or missing tunnel state counts as down. */
+export function vpnState(vpn: VpsVpn): VpsVpnState {
+  return vpn.HvcTunnelState === 'established' || vpn.HvcTunnelState === 'connecting'
+    ? vpn.HvcTunnelState
+    : 'down';
+}
+
+/** "a, b" → ['a','b']. */
+export function splitList(value: string | null | undefined): string[] {
+  return (value ?? '')
+    .split(/[\s,;]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+/** Bytes in human units (1024 base). */
+export function bytesLabel(value: number | string | null | undefined): string {
+  let n = Number(value ?? 0);
+  if (!Number.isFinite(n) || n < 0) n = 0;
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let i = 0;
+  while (n >= 1024 && i < units.length - 1) {
+    n /= 1024;
+    i += 1;
+  }
+  return `${i === 0 ? n : n.toFixed(1)} ${units[i]}`;
+}

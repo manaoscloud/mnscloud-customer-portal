@@ -11,6 +11,7 @@ import { VpsConsoleComponent } from './vps-console.component';
 import { VpsMetricsComponent } from './vps-metrics.component';
 import { VpsNetworkComponent } from './vps-network.component';
 import { VpsSnapshotsComponent } from './vps-snapshots.component';
+import { VpsVpnComponent } from './vps-vpn.component';
 import {
   memoryLabel,
   powerActions,
@@ -39,6 +40,7 @@ const REFRESH_LIMIT = 24;
     VpsMetricsComponent,
     VpsNetworkComponent,
     VpsSnapshotsComponent,
+    VpsVpnComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -188,6 +190,8 @@ const REFRESH_LIMIT = 24;
           </article>
         }
       </div>
+
+      <mcp-vps-vpn />
     </section>
 
     @if (console(); as server) {
