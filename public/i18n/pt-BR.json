@@ -62,6 +62,8 @@
   "financial.digitableLine": "Linha digitável",
   "financial.boletoPdf": "PDF do boleto",
   "financial.payByCard": "Pagar com cartão",
+  "financial.receipt": "Comprovante",
+  "financial.pixQrCode": "QR Code Pix",
   "financial.copied": "{{ label }} copiado para a área de transferência.",
   "financial.copyFailed": "Não foi possível copiar: {{ label }}.",
   "financial.reissue": "Gerar 2ª via",

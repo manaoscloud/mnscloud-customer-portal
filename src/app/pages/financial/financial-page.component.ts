@@ -18,10 +18,12 @@ export type CustomerBoleto = {
   status: string;
   dueDate: string;
   notes: string | null;
+  billingType?: string | null;
   gatewayStatus: string | null;
   barcode: string | null;
   digitableLine: string | null;
   pixCopyPaste: string | null;
+  pixEncodedImage?: string | null;
   boletoUrl: string | null;
   invoiceUrl: string | null;
   /** S6 P4: `available` when an owner or administrator may issue a second copy. */
@@ -104,7 +106,30 @@ export function canReissue(
                     }}
                   </p>
                 }
+                @if (boleto.pixEncodedImage && boleto.status !== 'paid' && boleto.status !== 'canceled') {
+                  <div class="pix-qrcode-box">
+                    <img
+                      [src]="'data:image/png;base64,' + boleto.pixEncodedImage"
+                      [alt]="'financial.pixQrCode' | transloco"
+                      class="pix-qrcode-image"
+                    />
+                  </div>
+                }
               </div>
+
+              @if (boleto.status === 'paid' && boleto.invoiceUrl) {
+                <div class="card-actions">
+                  <a
+                    matButton="outlined"
+                    [href]="boleto.invoiceUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <mat-icon>receipt</mat-icon>
+                    {{ 'financial.receipt' | transloco }}
+                  </a>
+                </div>
+              }
 
               @if (boleto.status !== 'paid' && boleto.status !== 'canceled') {
                 <div class="card-actions">
@@ -197,6 +222,19 @@ export function canReissue(
         &.is-overdue {
           border-left: 4px solid var(--danger);
         }
+      }
+      .pix-qrcode-box {
+        display: flex;
+        justify-content: center;
+        padding: 8px 0;
+      }
+      .pix-qrcode-image {
+        width: 140px;
+        height: 140px;
+        border-radius: 8px;
+        border: 1px solid var(--border-subtle, #e0e0e0);
+        background: #fff;
+        padding: 4px;
       }
       .card-header {
         display: flex;

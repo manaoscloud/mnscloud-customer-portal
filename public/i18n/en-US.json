@@ -62,6 +62,8 @@
   "financial.digitableLine": "Digitable line",
   "financial.boletoPdf": "Boleto PDF",
   "financial.payByCard": "Pay by card",
+  "financial.receipt": "Receipt",
+  "financial.pixQrCode": "Pix QR Code",
   "financial.copied": "{{ label }} copied to the clipboard.",
   "financial.copyFailed": "Could not copy {{ label }}.",
   "financial.reissue": "Issue second copy",
