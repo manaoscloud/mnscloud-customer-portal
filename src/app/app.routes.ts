@@ -125,6 +125,13 @@ export const routes: Routes = [
       { path: 'financial', component: FinancialPageComponent },
       { path: 'services', component: ServicesPageComponent },
       { path: 'support', component: SupportPageComponent },
+      {
+        path: 'assistant',
+        loadComponent: () =>
+          import('./pages/assistant/assistant-page.component').then(
+            (m) => m.AssistantPageComponent,
+          ),
+      },
       { path: 'profile', component: ProfilePageComponent },
       { path: 'users', component: UsersPageComponent },
     ],
