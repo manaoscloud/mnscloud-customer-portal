@@ -1,10 +1,11 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoPipe } from '@jsverse/transloco';
 
 @Component({
   selector: 'mcp-support-page',
-  imports: [MatIconModule, TranslocoPipe],
+  imports: [RouterLink, MatIconModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <section class="page">
@@ -16,6 +17,12 @@ import { TranslocoPipe } from '@jsverse/transloco';
       </header>
 
       <div class="module-grid">
+        <article class="module-tile card">
+          <span class="icon-badge"><mat-icon>smart_toy</mat-icon></span>
+          <h2>{{ 'support.assistantTitle' | transloco }}</h2>
+          <p>{{ 'support.assistantText' | transloco }}</p>
+          <a class="action-link" routerLink="/assistant">{{ 'support.assistantAction' | transloco }}</a>
+        </article>
         <article class="module-tile card">
           <span class="icon-badge"><mat-icon>confirmation_number</mat-icon></span>
           <h2>{{ 'support.ticketsTitle' | transloco }}</h2>
