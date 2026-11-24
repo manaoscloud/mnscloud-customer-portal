@@ -3,14 +3,14 @@
   "repository": "manaoscloud/mnscloud-customer-portal",
   "channels": {
     "stable": {
-      "version": "0.1.23",
-      "ref": "v0.1.23",
-      "releasedAt": "2026-10-26T07:47:14Z",
+      "version": "0.1.76",
+      "ref": "v0.1.76",
+      "releasedAt": "2026-11-24T11:50:20Z",
       "minimumVersion": "0.1.0",
       "artifact": {
-        "name": "mnscloud-customer-portal-web-v0.1.23.tar.gz",
-        "sha256": "8a7f6d57bf173f9a7742940ea70273a436273d3bbead22115f34faa33aa4cd90",
-        "sizeBytes": 773838,
+        "name": "mnscloud-customer-portal-web-v0.1.76.tar.gz",
+        "sha256": "cf445b3fe1d7a5c3cff55ab447dec292b03b23c1afa85fb412fb925d917d1abb",
+        "sizeBytes": 1585166,
         "contentType": "application/gzip"
       }
     }
