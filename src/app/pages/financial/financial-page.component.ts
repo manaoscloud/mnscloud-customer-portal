@@ -26,6 +26,7 @@ export type CustomerBoleto = {
   pixEncodedImage?: string | null;
   boletoUrl: string | null;
   invoiceUrl: string | null;
+  transactionReceiptUrl?: string | null;
   /** S6 P4: `available` when an owner or administrator may issue a second copy. */
   reissueOption?: 'available' | 'none';
   reissuedAt?: string | null;
@@ -117,11 +118,11 @@ export function canReissue(
                 }
               </div>
 
-              @if (boleto.status === 'paid' && boleto.invoiceUrl) {
+              @if (boleto.status === 'paid' && boleto.transactionReceiptUrl) {
                 <div class="card-actions">
                   <a
                     matButton="outlined"
-                    [href]="boleto.invoiceUrl"
+                    [href]="boleto.transactionReceiptUrl"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
