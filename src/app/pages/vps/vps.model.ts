@@ -320,3 +320,21 @@ export function bytesLabel(value: number | string | null | undefined): string {
   }
   return `${i === 0 ? n : n.toFixed(1)} ${units[i]}`;
 }
+
+
+/** NAT port forward published to the customer. */
+export type VpsPortForward = {
+  HpwUUID: string;
+  HostingVpsPublicIpHpiUUID: string;
+  HpiAddress: string;
+  HpwProtocol: 'tcp' | 'udp';
+  HpwPublicPortStart: number;
+  HpwPublicPortEnd: number;
+  HpwPrivateAddress: string;
+  HpwPrivatePort: number | null;
+  HpwSourceCidrs: string;
+  HpwDescription: string | null;
+  HpwIsActive: number;
+  HostingVpsInstanceHviUUID?: string | null;
+  InstanceName?: string | null;
+};

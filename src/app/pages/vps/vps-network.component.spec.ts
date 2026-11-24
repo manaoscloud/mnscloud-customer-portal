@@ -73,11 +73,16 @@ describe('VPS network helpers', () => {
 describe('VpsNetworkComponent', () => {
   let apiGet: ReturnType<typeof vi.fn>;
   let apiPut: ReturnType<typeof vi.fn>;
+  let apiDelete: ReturnType<typeof vi.fn>;
   let snack: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    apiGet = vi.fn().mockResolvedValue({ data: NETWORK });
+    apiGet = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('port-forwards')) return Promise.resolve({ data: { items: [] } });
+      return Promise.resolve({ data: NETWORK });
+    });
     apiPut = vi.fn().mockResolvedValue({ status: 'success', data: {} });
+    apiDelete = vi.fn().mockResolvedValue({ status: 'success', data: {} });
     snack = vi.fn();
     TestBed.configureTestingModule({
       imports: [
@@ -89,7 +94,7 @@ describe('VpsNetworkComponent', () => {
         }),
       ],
       providers: [
-        { provide: ApiService, useValue: { get: apiGet, put: apiPut } },
+        { provide: ApiService, useValue: { get: apiGet, put: apiPut, delete: apiDelete } },
         { provide: PortalI18nService, useValue: { t: (key: string) => key } },
         { provide: MatSnackBar, useValue: { open: snack } },
       ],
