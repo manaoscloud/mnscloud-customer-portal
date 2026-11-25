@@ -14,6 +14,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ApiError, ApiService } from '../../services/api.service';
 import { PortalI18nService } from '../../core/i18n/portal-i18n.service';
@@ -25,6 +26,7 @@ import {
   ruleTraffic,
   type VpsFirewallRule,
   type VpsNetwork,
+  type VpsPortForward,
   type VpsServer,
 } from './vps.model';
 
@@ -70,6 +72,7 @@ export function parsePorts(text: string): { from: number | null; to: number | nu
     MatIconModule,
     MatInputModule,
     MatSelectModule,
+    MatTooltipModule,
     TranslocoPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -140,6 +143,37 @@ export function parsePorts(text: string): { from: number | null; to: number | nu
                 }
               }
             </div>
+          }
+        </section>
+
+        <section>
+          <h3>{{ 'vps.nat.title' | transloco }}</h3>
+          <p class="hint">{{ 'vps.nat.description' | transloco }}</p>
+          @if (portForwards().length === 0) {
+            <p class="hint">{{ 'vps.nat.empty' | transloco }}</p>
+          } @else {
+            <ul class="rules">
+              @for (pf of portForwards(); track pf.HpwUUID) {
+                <li>
+                  <span class="badge">{{ pf.HpwProtocol.toUpperCase() }}</span>
+                  <code>{{ pf.HpiAddress }}:{{ pf.HpwPublicPortStart }}</code>
+                  <span>&rarr;</span>
+                  <code>{{ pf.HpwPrivateAddress }}{{ pf.HpwPrivatePort ? ':' + pf.HpwPrivatePort : '' }}</code>
+                  @if (pf.HpwDescription) {
+                    <small>{{ pf.HpwDescription }}</small>
+                  }
+                  <button
+                    matIconButton
+                    type="button"
+                    [disabled]="working()"
+                    (click)="deletePortForward(pf.HpwUUID)"
+                    [matTooltip]="'vps.nat.delete' | transloco"
+                  >
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </li>
+              }
+            </ul>
           }
         </section>
 
@@ -416,6 +450,7 @@ export class VpsNetworkComponent {
   readonly server = input.required<VpsServer>();
   readonly closed = output<void>();
   readonly network = signal<VpsNetwork | null>(null);
+  readonly portForwards = signal<VpsPortForward[]>([]);
   readonly loading = signal(false);
   readonly error = signal(false);
   readonly working = signal(false);
@@ -484,8 +519,14 @@ export class VpsNetworkComponent {
   async load(): Promise<void> {
     this.loading.set(true);
     try {
-      const response = await this.api.get<ApiEnvelope<VpsNetwork>>(this.endpoint('/network'));
-      this.network.set(response.data ?? null);
+      const [netRes, pfRes] = await Promise.all([
+        this.api.get<ApiEnvelope<VpsNetwork>>(this.endpoint('/network')),
+        this.api.get<ApiEnvelope<{ items: VpsPortForward[] }>>(
+          `customer-portal/vps/port-forwards?instanceUUID=${encodeURIComponent(this.server().HviUUID)}`,
+        ).catch(() => ({ data: { items: [] } })),
+      ]);
+      this.network.set(netRes.data ?? null);
+      this.portForwards.set(pfRes.data?.items ?? []);
       this.edited.set(null);
       this.error.set(false);
     } catch {
@@ -493,6 +534,13 @@ export class VpsNetworkComponent {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  async deletePortForward(uuid: string): Promise<void> {
+    await this.write(
+      () => this.api.delete(`customer-portal/vps/port-forwards/${encodeURIComponent(uuid)}`),
+      'vps.nat.deleted',
+    );
   }
 
   editPtr(uuid: string, current: string | null): void {

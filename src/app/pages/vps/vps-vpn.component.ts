@@ -143,6 +143,15 @@ export const PSK_VISIBLE_MS = 10_000;
                     <mat-icon>key</mat-icon>
                     {{ 'vps.vpn.reveal' | transloco }}
                   </button>
+                  <button
+                    matButton="outlined"
+                    type="button"
+                    [disabled]="busy() === vpn.HvcUUID"
+                    (click)="rotatePsk(vpn)"
+                  >
+                    <mat-icon>sync</mat-icon>
+                    {{ 'vps.vpn.rotatePsk' | transloco }}
+                  </button>
                 }
                 <button
                   matButton="filled"
@@ -322,6 +331,23 @@ export class VpsVpnComponent {
             ? 'vps.vpn.tooMany'
             : 'vps.vpn.revealFailed',
       );
+    } finally {
+      this.busy.set(null);
+    }
+  }
+
+  async rotatePsk(vpn: VpsVpn): Promise<void> {
+    if (!confirm(this.i18n.t('vps.vpn.rotateConfirm'))) return;
+    this.busy.set(vpn.HvcUUID);
+    try {
+      await this.api.post<ApiEnvelope<{ status: string }>>(
+        `customer-portal/vps/vpn-connections/${encodeURIComponent(vpn.HvcUUID)}/psk/rotate`,
+      );
+      this.clearKey();
+      this.notify('vps.vpn.rotated');
+      await this.load();
+    } catch {
+      this.notify('vps.vpn.rotateFailed');
     } finally {
       this.busy.set(null);
     }
