@@ -110,4 +110,65 @@ describe('InternetPageComponent', () => {
     );
     expect(component.unlockSuccess()).toBe(true);
   });
+
+  it('selects an eligible plan with distinct synthetic IDs, verifies URL and body mapping, and renders pending plan on screen', async () => {
+    const fixture = TestBed.createComponent(InternetPageComponent);
+    const component = fixture.componentInstance;
+    await component.load();
+
+    const sub = component.subscriptions()[0];
+    // Subscription synthetic ID is 'sub-1'
+    expect(sub.subscriptionUUID).toBe('sub-1');
+
+    component.openChangePlan(sub);
+    // Distinct synthetic IDs: subscription is 'sub-1', plan is 'plan-1g'
+    expect(component.selectedPlanUUID()).toBe('plan-600m');
+    component.selectedPlanUUID.set('plan-1g');
+    component.changePlanNotes.set('Solicito upgrade para 1 Gbps');
+
+    apiPost.mockResolvedValueOnce({
+      data: {
+        item: {
+          subscriptionUUID: 'sub-1',
+          pendingPlanUUID: 'plan-1g',
+          pendingPlanName: 'Fibra 1 Giga Gamer',
+          pendingPlanDate: '2026-11-26',
+        },
+      },
+    });
+
+    apiGet.mockImplementation((path: string) => {
+      if (path.includes('/status')) {
+        return Promise.resolve({ data: { status: STATUS } });
+      }
+      return Promise.resolve({
+        data: {
+          items: [{
+            ...SUBSCRIPTION,
+            pendingPlanUUID: 'plan-1g',
+            pendingPlanName: 'Fibra 1 Giga Gamer',
+            pendingPlanDate: '2026-11-26',
+          }],
+        },
+      });
+    });
+
+    await component.submitChangePlan();
+
+    // 1. Confirms URL carries subscription ID ('sub-1')
+    // 2. Confirms request body carries the selected plan ID ('plan-1g')
+    expect(apiPost).toHaveBeenCalledWith(
+      'customer-portal/isp/subscriptions/sub-1/change-plan',
+      { planUUID: 'plan-1g', notes: 'Solicito upgrade para 1 Gbps' },
+    );
+
+    // 3. Confirms screen renders the pending plan returned by the API
+    const updatedSub = component.subscriptions().find((s) => s.subscriptionUUID === 'sub-1');
+    expect(updatedSub?.pendingPlanName).toBe('Fibra 1 Giga Gamer');
+    expect(component.changePlanSuccess()).toContain('Fibra 1 Giga Gamer');
+
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('Fibra 1 Giga Gamer');
+  });
 });

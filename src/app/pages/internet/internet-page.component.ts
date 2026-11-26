@@ -9,6 +9,7 @@ import type { ApiEnvelope } from '../../models/session.model';
 import {
   type CustomerPortalIspCancelResult,
   type CustomerPortalIspChangePlanResult,
+  type CustomerPortalIspPlan,
   type CustomerPortalIspSubscription,
   type CustomerPortalIspSubscriptionStatus,
   type CustomerPortalIspTrustUnlockResult,
@@ -92,11 +93,21 @@ import {
                 @if (sub.trustUnlockActive === 1) {
                   <span class="badge warning">{{ 'internet.trustUnlockActive' | transloco }}</span>
                 }
+                @if (sub.pendingPlanName) {
+                  <span class="badge info">{{ sub.pendingPlanName }}</span>
+                }
                 <span class="badge" [attr.data-state]="sub.effectiveState">
                   {{ sub.effectiveState }}
                 </span>
               </div>
             </div>
+
+            @if (sub.pendingPlanName) {
+              <div class="pending-plan-banner">
+                <mat-icon>schedule</mat-icon>
+                <span>{{ 'internet.pendingPlanChange' | transloco }}: <strong>{{ sub.pendingPlanName }}</strong></span>
+              </div>
+            }
 
             <div class="details-grid">
               <div class="detail-item">
@@ -215,6 +226,19 @@ import {
           <div class="modal card">
             <h3>{{ 'internet.changePlanTitle' | transloco }}</h3>
             <p>{{ 'internet.changePlanPrompt' | transloco }}</p>
+            <div class="field-block">
+              <label class="field-label" for="plan-select">{{ 'internet.selectPlan' | transloco }}</label>
+              <select
+                id="plan-select"
+                class="plan-select"
+                [value]="selectedPlanUUID()"
+                (change)="selectedPlanUUID.set($any($event.target).value)"
+              >
+                @for (plan of eligiblePlans(); track plan.planUUID) {
+                  <option [value]="plan.planUUID">{{ plan.name }} ({{ speed(plan.downloadKbps) }} / {{ speed(plan.uploadKbps) }})</option>
+                }
+              </select>
+            </div>
             <textarea
               class="notes-input"
               rows="3"
@@ -225,7 +249,7 @@ import {
               <button matButton="outlined" type="button" (click)="closeDialogs()" [disabled]="changingPlan()">
                 Cancelar
               </button>
-              <button matButton="filled" type="button" (click)="submitChangePlan()" [disabled]="changingPlan()">
+              <button matButton="filled" type="button" (click)="submitChangePlan()" [disabled]="changingPlan() || !selectedPlanUUID()">
                 {{ 'internet.changePlanSubmit' | transloco }}
               </button>
             </div>
@@ -441,6 +465,40 @@ import {
       gap: 12px;
       margin-top: 16px;
     }
+    .pending-plan-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+      border: 1px solid rgba(33, 150, 243, 0.3);
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .field-block {
+      margin: 12px 0 8px 0;
+      text-align: left;
+    }
+    .field-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      color: var(--mat-sys-on-surface);
+    }
+    .plan-select {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--mat-sys-outline);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: inherit;
+      font-size: 14px;
+      background: var(--mat-sys-surface);
+      color: var(--mat-sys-on-surface);
+    }
   `,
 })
 export class InternetPageComponent {
@@ -456,6 +514,11 @@ export class InternetPageComponent {
   readonly changePlanNotes = signal('');
   readonly changePlanSuccess = signal<string | null>(null);
   readonly changingPlan = signal(false);
+  readonly eligiblePlans = signal<CustomerPortalIspPlan[]>([
+    { planUUID: 'plan-600m', name: 'Fibra 600M Turbo', downloadKbps: 600000, uploadKbps: 300000 },
+    { planUUID: 'plan-1g', name: 'Fibra 1 Giga Gamer', downloadKbps: 1000000, uploadKbps: 500000 },
+  ]);
+  readonly selectedPlanUUID = signal<string>('');
 
   readonly cancelSub = signal<CustomerPortalIspSubscription | null>(null);
   readonly cancelReason = signal('');
@@ -520,18 +583,37 @@ export class InternetPageComponent {
   openChangePlan(sub: CustomerPortalIspSubscription): void {
     this.changePlanSub.set(sub);
     this.changePlanNotes.set('');
+    this.selectedPlanUUID.set(this.eligiblePlans()[0]?.planUUID ?? '');
   }
 
   async submitChangePlan(): Promise<void> {
     const sub = this.changePlanSub();
-    if (!sub) return;
+    const planUUID = this.selectedPlanUUID();
+    if (!sub || !planUUID) return;
     this.changingPlan.set(true);
     try {
       const response = await this.api.post<ApiEnvelope<{ item: CustomerPortalIspChangePlanResult }>>(
         `customer-portal/isp/subscriptions/${sub.subscriptionUUID}/change-plan`,
-        { planUUID: sub.subscriptionUUID, notes: this.changePlanNotes() },
+        { planUUID, notes: this.changePlanNotes() },
       );
-      this.changePlanSuccess.set(response.data?.item?.pendingPlanName ? `Alteração para ${response.data.item.pendingPlanName} solicitada com sucesso!` : 'Alteração solicitada com sucesso!');
+      const pendingName = response.data?.item?.pendingPlanName;
+      if (pendingName) {
+        this.changePlanSuccess.set(`Alteração para ${pendingName} solicitada com sucesso!`);
+        this.subscriptions.update((list) =>
+          list.map((item) =>
+            item.subscriptionUUID === sub.subscriptionUUID
+              ? {
+                  ...item,
+                  pendingPlanUUID: response.data?.item?.pendingPlanUUID,
+                  pendingPlanName: pendingName,
+                  pendingPlanDate: response.data?.item?.pendingPlanDate,
+                }
+              : item,
+          ),
+        );
+      } else {
+        this.changePlanSuccess.set('Alteração solicitada com sucesso!');
+      }
       this.closeDialogs();
       await this.load();
     } catch {

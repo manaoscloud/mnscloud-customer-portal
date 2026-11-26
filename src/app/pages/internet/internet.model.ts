@@ -20,7 +20,17 @@ export type CustomerPortalIspSubscription = {
   addressMunicipalityCode: string | null;
   dunningBlocked: number;
   trustUnlockActive: number;
+  pendingPlanUUID?: string | null;
+  pendingPlanName?: string | null;
+  pendingPlanDate?: string | null;
   equipments?: CustomerPortalIspEquipment[];
+};
+
+export type CustomerPortalIspPlan = {
+  planUUID: string;
+  name: string;
+  downloadKbps: number;
+  uploadKbps: number;
 };
 
 export type CustomerPortalIspEquipment = {
