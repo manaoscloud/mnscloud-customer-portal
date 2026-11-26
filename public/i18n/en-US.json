@@ -1423,5 +1423,18 @@
   "internet.trafficMonth": "Monthly traffic",
   "internet.financialLink": "Invoices & Billing",
   "internet.connectionTestLink": "Connection Test",
-  "internet.supportLink": "Technical Support"
+  "internet.supportLink": "Technical Support",
+  "internet.changePlanAction": "Change Plan",
+  "internet.changePlanTitle": "Request Plan Change",
+  "internet.changePlanPrompt": "Desired plan or notes:",
+  "internet.changePlanSubmit": "Request Change",
+  "internet.changePlanSuccess": "Plan change request recorded successfully! It will take effect on the next billing cycle.",
+  "internet.cancelSubscriptionAction": "Cancel Subscription",
+  "internet.cancelDialogTitle": "Cancellation Confirmation",
+  "internet.cancelDialogWarning": "Warning: cancellation deactivates the internet service. Comodato equipment must be returned.",
+  "internet.cancelReasonPrompt": "Cancellation reason (optional):",
+  "internet.cancelConfirm": "Confirm Cancellation",
+  "internet.cancelProtocol": "Cancellation protocol:",
+  "internet.cancelRemovalNotice": "A work order has been generated to collect comodato equipment.",
+  "internet.equipmentComodato": "Comodato Equipment"
 }

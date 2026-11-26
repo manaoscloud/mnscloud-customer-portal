@@ -1423,5 +1423,18 @@
   "internet.trafficMonth": "Tráfego no mês",
   "internet.financialLink": "2ª Via de Faturas",
   "internet.connectionTestLink": "Teste de Conexão",
-  "internet.supportLink": "Suporte Técnico"
+  "internet.supportLink": "Suporte Técnico",
+  "internet.changePlanAction": "Mudar Plano",
+  "internet.changePlanTitle": "Solicitar Alteração de Plano",
+  "internet.changePlanPrompt": "Observações ou plano desejado:",
+  "internet.changePlanSubmit": "Solicitar Alteração",
+  "internet.changePlanSuccess": "Solicitação de alteração de plano registrada com sucesso! Entrará em vigor no próximo ciclo de faturamento.",
+  "internet.cancelSubscriptionAction": "Cancelar Assinatura",
+  "internet.cancelDialogTitle": "Confirmação de Cancelamento",
+  "internet.cancelDialogWarning": "Atenção: o cancelamento desativa o serviço de internet. Equipamentos em comodato deverão ser devolvidos.",
+  "internet.cancelReasonPrompt": "Motivo do cancelamento (opcional):",
+  "internet.cancelConfirm": "Confirmar Cancelamento",
+  "internet.cancelProtocol": "Protocolo de cancelamento:",
+  "internet.cancelRemovalNotice": "Uma ordem de serviço foi gerada para retirada dos equipamentos em comodato.",
+  "internet.equipmentComodato": "Equipamento em Comodato"
 }
