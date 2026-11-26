@@ -226,19 +226,29 @@ import {
           <div class="modal card">
             <h3>{{ 'internet.changePlanTitle' | transloco }}</h3>
             <p>{{ 'internet.changePlanPrompt' | transloco }}</p>
-            <div class="field-block">
-              <label class="field-label" for="plan-select">{{ 'internet.selectPlan' | transloco }}</label>
-              <select
-                id="plan-select"
-                class="plan-select"
-                [value]="selectedPlanUUID()"
-                (change)="selectedPlanUUID.set($any($event.target).value)"
-              >
-                @for (plan of eligiblePlans(); track plan.planUUID) {
-                  <option [value]="plan.planUUID">{{ plan.name }} ({{ speed(plan.downloadKbps) }} / {{ speed(plan.uploadKbps) }})</option>
-                }
-              </select>
-            </div>
+            @if (loadingPlans()) {
+              <div class="field-block">
+                <span class="field-label">Carregando planos...</span>
+              </div>
+            } @else if (eligiblePlans().length === 0) {
+              <div class="field-block no-plans">
+                <p>{{ 'internet.noEligiblePlans' | transloco }}</p>
+              </div>
+            } @else {
+              <div class="field-block">
+                <label class="field-label" for="plan-select">{{ 'internet.selectPlan' | transloco }}</label>
+                <select
+                  id="plan-select"
+                  class="plan-select"
+                  [value]="selectedPlanUUID()"
+                  (change)="selectedPlanUUID.set($any($event.target).value)"
+                >
+                  @for (plan of eligiblePlans(); track plan.planUUID) {
+                    <option [value]="plan.planUUID">{{ plan.name }} ({{ speed(plan.downloadKbps) }} / {{ speed(plan.uploadKbps) }})</option>
+                  }
+                </select>
+              </div>
+            }
             <textarea
               class="notes-input"
               rows="3"
@@ -249,7 +259,7 @@ import {
               <button matButton="outlined" type="button" (click)="closeDialogs()" [disabled]="changingPlan()">
                 Cancelar
               </button>
-              <button matButton="filled" type="button" (click)="submitChangePlan()" [disabled]="changingPlan() || !selectedPlanUUID()">
+              <button matButton="filled" type="button" (click)="submitChangePlan()" [disabled]="changingPlan() || loadingPlans() || !selectedPlanUUID() || eligiblePlans().length === 0">
                 {{ 'internet.changePlanSubmit' | transloco }}
               </button>
             </div>
@@ -514,10 +524,8 @@ export class InternetPageComponent {
   readonly changePlanNotes = signal('');
   readonly changePlanSuccess = signal<string | null>(null);
   readonly changingPlan = signal(false);
-  readonly eligiblePlans = signal<CustomerPortalIspPlan[]>([
-    { planUUID: 'plan-600m', name: 'Fibra 600M Turbo', downloadKbps: 600000, uploadKbps: 300000 },
-    { planUUID: 'plan-1g', name: 'Fibra 1 Giga Gamer', downloadKbps: 1000000, uploadKbps: 500000 },
-  ]);
+  readonly loadingPlans = signal(false);
+  readonly eligiblePlans = signal<CustomerPortalIspPlan[]>([]);
   readonly selectedPlanUUID = signal<string>('');
 
   readonly cancelSub = signal<CustomerPortalIspSubscription | null>(null);
@@ -580,16 +588,30 @@ export class InternetPageComponent {
     }
   }
 
-  openChangePlan(sub: CustomerPortalIspSubscription): void {
+  async openChangePlan(sub: CustomerPortalIspSubscription): Promise<void> {
     this.changePlanSub.set(sub);
     this.changePlanNotes.set('');
-    this.selectedPlanUUID.set(this.eligiblePlans()[0]?.planUUID ?? '');
+    this.selectedPlanUUID.set('');
+    this.loadingPlans.set(true);
+    try {
+      const response = await this.api.get<ApiEnvelope<{ items: CustomerPortalIspPlan[] }>>(
+        `customer-portal/isp/subscriptions/${sub.subscriptionUUID}/eligible-plans`,
+      );
+      const items = response.data?.items ?? [];
+      this.eligiblePlans.set(items);
+      this.selectedPlanUUID.set(items[0]?.planUUID ?? '');
+    } catch {
+      this.eligiblePlans.set([]);
+      this.selectedPlanUUID.set('');
+    } finally {
+      this.loadingPlans.set(false);
+    }
   }
 
   async submitChangePlan(): Promise<void> {
     const sub = this.changePlanSub();
     const planUUID = this.selectedPlanUUID();
-    if (!sub || !planUUID) return;
+    if (!sub || !planUUID || this.eligiblePlans().length === 0) return;
     this.changingPlan.set(true);
     try {
       const response = await this.api.post<ApiEnvelope<{ item: CustomerPortalIspChangePlanResult }>>(

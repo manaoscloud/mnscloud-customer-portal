@@ -1427,6 +1427,7 @@
   "internet.changePlanAction": "Mudar Plano",
   "internet.changePlanTitle": "Solicitar Alteração de Plano",
   "internet.selectPlan": "Selecione o plano desejado:",
+  "internet.noEligiblePlans": "Nenhum plano elegível disponível para alteração.",
   "internet.changePlanPrompt": "Observações ou plano desejado:",
   "internet.changePlanSubmit": "Solicitar Alteração",
   "internet.changePlanSuccess": "Solicitação de alteração de plano registrada com sucesso! Entrará em vigor no próximo ciclo de faturamento.",

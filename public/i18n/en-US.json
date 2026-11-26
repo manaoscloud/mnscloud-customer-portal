@@ -1427,6 +1427,7 @@
   "internet.changePlanAction": "Change Plan",
   "internet.changePlanTitle": "Request Plan Change",
   "internet.selectPlan": "Select desired plan:",
+  "internet.noEligiblePlans": "No eligible plans available for change.",
   "internet.changePlanPrompt": "Desired plan or notes:",
   "internet.changePlanSubmit": "Request Change",
   "internet.changePlanSuccess": "Plan change request recorded successfully! It will take effect on the next billing cycle.",
