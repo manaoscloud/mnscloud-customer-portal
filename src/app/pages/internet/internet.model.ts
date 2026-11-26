@@ -20,6 +20,39 @@ export type CustomerPortalIspSubscription = {
   addressMunicipalityCode: string | null;
   dunningBlocked: number;
   trustUnlockActive: number;
+  pendingPlanUUID?: string | null;
+  pendingPlanName?: string | null;
+  pendingPlanDate?: string | null;
+  equipments?: CustomerPortalIspEquipment[];
+};
+
+export type CustomerPortalIspPlan = {
+  planUUID: string;
+  name: string;
+  downloadKbps: number;
+  uploadKbps: number;
+};
+
+export type CustomerPortalIspEquipment = {
+  serialNumber: string;
+  macAddress: string | null;
+  gponSn: string | null;
+  state: string;
+};
+
+export type CustomerPortalIspCancelResult = {
+  subscriptionUUID: string;
+  status: string;
+  protocol: string;
+  cancellationDate: string;
+  removalScheduled: boolean;
+};
+
+export type CustomerPortalIspChangePlanResult = {
+  subscriptionUUID: string;
+  pendingPlanUUID: string;
+  pendingPlanName: string;
+  pendingPlanDate: string;
 };
 
 export type CustomerPortalIspSubscriptionStatus = {
