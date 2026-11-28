@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,12 +9,23 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { ApiService } from '../../services/api.service';
 import type { ApiEnvelope } from '../../models/session.model';
 
-type PublishedDocument = { RdcUUID: string; RdcTitle: string; GacName: string; GdsName: string; RdvUUID: string | null };
+type PublishedDocument = {
+  RdcUUID: string; RdcTitle: string; GacName: string; GdsName: string; RdvUUID: string | null;
+  RdcIssueDate?: string | null; RdcExpiryDate?: string | null;
+};
+
+const EXTENSIONS: Record<string, string> = { 'application/pdf': 'pdf', 'image/png': 'png', 'image/jpeg': 'jpg' };
+
+/** Safe download name from the document title and the served content type. */
+export function downloadName(title: string, type: string): string {
+  const base = (title || '').normalize('NFC').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120) || 'document';
+  return `${base}.${EXTENSIONS[type] ?? 'bin'}`;
+}
 type DocumentPage = { items: PublishedDocument[]; total: number; limit: number; offset: number };
 
 @Component({
   selector: 'mcp-ged-page',
-  imports: [FormsModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, TranslocoPipe],
+  imports: [DatePipe, FormsModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -23,11 +35,14 @@ type DocumentPage = { items: PublishedDocument[]; total: number; limit: number; 
         <button matButton="filled" type="submit" [disabled]="loading()">{{ 'ged.search' | transloco }}</button>
       </form>
       @if (error()) { <p class="card" role="alert">{{ 'ged.error' | transloco }}</p> }
+      @if (downloadError()) { <p class="card" role="alert">{{ 'ged.downloadError' | transloco }}</p> }
       @if (loading()) { <p role="status">{{ 'ged.loading' | transloco }}</p> }
       @else if (!error() && documents().length === 0) { <p class="card">{{ 'ged.empty' | transloco }}</p> }
       <div class="documents">
         @for (document of documents(); track document.RdcUUID) {
-          <article class="card document"><div><h2>{{ document.RdcTitle }}</h2><p>{{ document.GacName }} · {{ document.GdsName }}</p></div>
+          <article class="card document"><div><h2>{{ document.RdcTitle }}</h2><p>{{ document.GacName }} · {{ document.GdsName }}</p>
+            @if (document.RdcIssueDate) { <p class="meta">{{ 'ged.issued' | transloco }}: {{ document.RdcIssueDate | date: 'shortDate' : 'UTC' }}</p> }
+            @if (document.RdcExpiryDate) { <p class="meta">{{ 'ged.expires' | transloco }}: {{ document.RdcExpiryDate | date: 'shortDate' : 'UTC' }}</p> }</div>
             <button matButton="outlined" type="button" (click)="download(document)" [disabled]="!document.RdvUUID || downloading() !== null">
               <mat-icon>download</mat-icon>{{ 'ged.download' | transloco }}
             </button>
@@ -46,7 +61,7 @@ type DocumentPage = { items: PublishedDocument[]; total: number; limit: number; 
     .documents { display: grid; gap: 16px; }
     .document { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 20px; }
     .document > div { min-width: 0; flex: 1 1 220px; overflow-wrap: anywhere; }
-    h2 { font-size: 1.1rem; margin: 0; } .pagination { justify-content: flex-end; margin-top: 16px; }
+    h2 { font-size: 1.1rem; margin: 0; } .meta { margin: 4px 0 0; opacity: .8; } .pagination { justify-content: flex-end; margin-top: 16px; }
   `],
 })
 export class GedPageComponent {
@@ -54,6 +69,7 @@ export class GedPageComponent {
   readonly documents = signal<PublishedDocument[]>([]);
   readonly loading = signal(false);
   readonly error = signal(false);
+  readonly downloadError = signal(false);
   readonly downloading = signal<string | null>(null);
   readonly total = signal(0);
   readonly offset = signal(0);
@@ -73,15 +89,14 @@ export class GedPageComponent {
   }
   async download(document: PublishedDocument) {
     if (!document.RdvUUID || this.downloading()) return;
-    this.downloading.set(document.RdcUUID); this.error.set(false);
+    this.downloading.set(document.RdcUUID); this.downloadError.set(false);
     try {
       const blob = await this.api.getBlob(`customer-portal/ged/documents/${encodeURIComponent(document.RdcUUID)}/versions/${encodeURIComponent(document.RdvUUID)}/content`);
       const url = URL.createObjectURL(blob);
       const link = window.document.createElement('a');
-      const extension = blob.type === 'application/pdf' ? 'pdf' : blob.type === 'image/png' ? 'png' : 'jpg';
-      link.href = url; link.download = `document.${extension}`; link.click();
+      link.href = url; link.download = downloadName(document.RdcTitle, blob.type); link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch { this.error.set(true); }
+    } catch { this.downloadError.set(true); }
     finally { this.downloading.set(null); }
   }
 }
